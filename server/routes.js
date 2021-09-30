@@ -118,7 +118,7 @@ function sendBadgeJson(headers, badgeType, respond) {
         }
     }
 
-    let jsonres = {
+    let jsonToSend = {
         schemaVersion: 1,
         label: badgetypes[badgeType].label,
         color: badgetypes[badgeType].color,
@@ -132,21 +132,26 @@ function sendBadgeJson(headers, badgeType, respond) {
             str += d.toString()
         })
         res.on("end", () => {
-            let json = JSON.parse(str)
+            let parsedJson = JSON.parse(str)
+
+            if(parsedJson.length == 0) {
+                jsonToSend.message = "unavailable"
+                return respond(jsonToSend)
+            }
             if(badgeType === "build") {
-                json[0].status !== "success" ? jsonres.color = "red" : ""
-                jsonres.message = json[0].status
+                parsedJson[0].status !== "success" ? jsonToSend.color = "red" : ""
+                jsonToSend.message = parsedJson[0].status
             }
             if(badgeType === "version") {
-                jsonres.message = json[0].name
+                jsonToSend.message = parsedJson[0].name
             }
             if(badgeType === "docker") {
-                let date = new Date(json.created_at)
+                let date = new Date(parsedJson.created_at)
                 let datestr = `${date.getMonth()+1}-${date.getDate()}-${date.getFullYear()}`
-                jsonres.message = datestr
+                jsonToSend.message = datestr
             }
 
-            respond(jsonres)
+            respond(jsonToSend)
         })
     })
 }

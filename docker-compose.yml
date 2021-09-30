@@ -21,6 +21,8 @@ services:
             - "${FOLDER_LOCATION:-.}/server:/home/app/server"
             - "${FOLDER_LOCATION:-.}/docker-compose.yml:/home/app/docker-compose.yml"
             #- "${FOLDER_LOCATION:-.}/../notes:/home/app/server/static/md"
+        env_file:
+            - "${COMPOSE_ENV_FILE:-.env.tmpl}"
         environment:
             DEV_DATABASE_URL: "mongodb://mongodb:27017/${MONGO_DB_NAME:-mongo}"
             LOG_EVERY_NUM_CHECKS: 5
@@ -46,6 +48,8 @@ services:
             context: .
             target: prod
             args: *default-buildargs
+        env_file:
+            - "${COMPOSE_ENV_FILE:-.env.tmpl}"
         environment:
             CONSUL_SERVICE_NAME:    "website"
             REGISTER_SERVICE:       "true"
