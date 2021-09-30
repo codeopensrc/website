@@ -103,17 +103,17 @@ function sendBadgeJson(headers, badgeType, respond) {
     let badgetypes = {
         build: {
             label: "Build",
-            apiReq: `${GITLAB_API_URL}/projects/1/pipelines?ref=master&scope=finished&private_token=${TOKEN_API_SELF_READ}`,
+            apiReq: `${GITLAB_API_URL}/projects/161/pipelines?ref=master&scope=finished&private_token=${TOKEN_API_SELF_READ}`,
             color: "brightgreen",
         },
         version: {
             label: "Version",
-            apiReq: `${GITLAB_API_URL}/projects/1/repository/tags?private_token=${TOKEN_API_SELF_READ}`,
+            apiReq: `${GITLAB_API_URL}/projects/161/repository/tags?private_token=${TOKEN_API_SELF_READ}`,
             color: "blue",
         },
         docker: {
             label: "Docker",
-            apiReq: `${GITLAB_API_URL}/projects/1/registry/repositories/8/tags/latest?private_token=${TOKEN_API_SELF_READ}`,
+            apiReq: `${GITLAB_API_URL}/projects/161/registry/repositories/11/tags/latest?private_token=${TOKEN_API_SELF_READ}`,
             color: "blue",
         }
     }
