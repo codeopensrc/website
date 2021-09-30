@@ -1,0 +1,78 @@
+@import "vars.less";
+
+#gamespage {
+    background-color: #18181b;
+    display: flex;
+    min-width: 1200px;
+
+    #header {
+        height: 42%;
+        color: white;
+        z-index: 1;
+        #latestActivity a { color: #6a9dff; }
+    }
+
+    #games-container {
+        position: relative;
+        height: 100vh;
+        left: @leftAmt;
+        width: @rightWidth;
+        background-color: #18181b;
+        display: flex;
+        align-items: center;
+        min-width: 1200px;
+        #games-sidebar {
+            color: white;
+            display: flex;
+            width: 10%;
+            flex-direction: column;
+            position: relative;
+            span {
+                text-align: center;
+                font-size: 1.5em;
+            }
+            .games-btn {
+                background-color: #18181b;
+                color: white;
+                width: 85%;
+                min-width: 152px;
+                height: 2em;
+                border: 1px solid white;
+                display: flex;
+                align-self: center;
+                justify-content: center;
+                align-items: center;
+                font-size: 2em;
+                margin: 1px;
+                padding: 1px;
+                &:hover {
+                    cursor: pointer;
+                    background-color: #3b3b40;
+                }
+                &:active {
+                    background-color: green;
+                    padding-left: 2px;
+                    padding-top: 2px;
+                    padding-right: 0px;
+                    padding-bottom: 0px;
+                }
+                &:disabled {
+                    pointer-events: none;
+                    opacity: 0.5;
+                }
+            }
+        }
+        #unity-container {
+            top: initial;
+            transform: initial;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 1024px;
+            left: 4%;
+            #unity-build-title {
+                color: white;
+            }
+        }
+    }
+}

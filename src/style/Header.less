@@ -1,0 +1,178 @@
+@import "vars.less";
+
+#header {
+    position: fixed;
+    height: 100%;
+    margin: 0 0 0 1.25em;
+    top: 2.5em;
+    width: @leftWidth;
+    min-width: 165px;
+    //logo/brand;
+    #logo {
+        background: black;
+        color: white;
+        font-size: 1.7em;
+        padding: 0.3em;
+        text-align: center;
+        .headertxt {
+            font-family: arial black;
+            color: #46ce03;
+        }
+    }
+
+    #latestActivity {
+        font-family: monospace;
+        font-size: 11px;
+
+        a {
+            text-decoration: none;
+            color: #01258e;
+            &:hover {
+                text-decoration: underline;
+                font-weight: bold;
+            }
+        }
+        h3, h4 {
+            text-align: center;
+            margin: 6px 0;
+            font-size: 11px;
+        }
+        .sep {
+            border-top: 1px solid;
+            display: block;
+            padding: 4px 5px 1px;
+        }
+        .activityRow {
+            display: flex;
+            padding: 2px 0 4px;
+
+           .commit { min-width: 22% }
+           .namespace > a { padding-left: 2px; }
+        }
+    }
+
+	//nav
+    #navBar {
+        margin: 1.2em auto;
+        text-align:center;
+        display: flex;
+        flex-direction: column;
+        .navBtn {
+            display: inline-block;
+            font-size: 1.9em;
+            padding: .4em 0;
+            text-align:center;
+            width: 100%;
+            background-color: black;
+            margin: 1px;
+            text-decoration: none;
+            color: #46ce03;
+            font-family: verdana;
+            &:hover {
+                background-color: gray;
+                cursor: pointer;
+            }
+        }
+    }
+
+	//welcome message
+	#welcome {
+		font-size: 1.8em;
+        font-family: monospace;
+		margin: 1em 0px 1em 0;
+		text-align:center;
+        display: flex;
+        flex-direction: column;
+        span {
+            margin-bottom: 5px;
+            font-family: arial;
+            &.name { font-weight: bold; }
+        }
+        a {
+            margin: .3em 1em;
+        }
+		.mysocialicons {
+			vertical-align:top;
+		}
+        .gitlabIcon {
+            height:2.2em;
+			width:2.3em;
+        }
+        .gistIcon {
+            width: 4.7em;
+            height:1.2em;
+        }
+        .githubIcon {
+            height:2.1em;
+			width:2.1em;
+        }
+	}
+	#twitterContainer {
+		margin: auto;
+		text-align:center;
+		#twitterInner {
+			margin:auto;
+			width: 27em;
+			.twitterAvatar {
+				margin: 5px 5px 0 0;
+				vertical-align: middle;
+				border: 1px solid black;
+				border-radius: 5px;
+				width: 100px;
+			}
+		}
+	}
+
+	#extraContainer {
+        // overflow-y: auto;
+        text-align: center;
+		height: 35%;
+		margin: 5px 0 0 0;
+		#github {
+			h1 {
+				margin: .3em 0 .6em 0;
+				font-size: 2.4em;
+				text-align: center;
+			}
+			#repoContainer {
+				font-size: 1.7em;
+				margin: 0 auto;
+				text-align: center;
+				.repo {
+					width: 10em;
+					margin: 0 auto .1em;
+					text-align:left;
+					a:nth-of-type(2){
+						position:relative;
+						top: -.75em;
+						text-decoration: none;
+						&:hover {	color:green; }
+					}
+					.gitIcon {
+						height:1em;
+						width: 1em;
+					}
+				}
+			}
+		}
+
+		#todoList {
+			text-align:center;
+			margin: 0 0 3em 0 ;
+			> div:not(.todoItem) { display:inline-block; width: 100%; }
+			> input {	width: 75%;	}
+			.todoItem {
+				list-style-type: bullet;
+				text-align:left;
+				font-size: 1.8em;
+				width: 100%;
+				&:hover {	cursor: pointer; }
+				button {
+					margin: 0 0 0 4px;
+					&:hover {	cursor: pointer; }
+				}
+			}
+		}
+	}
+
+}

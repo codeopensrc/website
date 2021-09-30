@@ -1,0 +1,586 @@
+stages:
+  - build
+  - deploy
+  - stop
+  - commit
+  - release
+  - deploy_prod
+  - stop_prod
+
+variables:
+  PROJECT_APP_IMAGE: $CI_REGISTRY_IMAGE/app
+  TOKEN_REPO_WRITE_NAME: ci_push_token
+  TOKEN_REPO_SELF_WRITE: "secret_value"
+  TOKEN_API_SNIPPET_WRITE: "secret_value"
+  SERVICE_NAME: ${CI_PROJECT_NAME}
+  SUBDOMAIN: www
+  AUTH_URL: ""
+  MONGO_DB_NAME: citmp
+  DEPLOY_SNIP_PROJECT_ID: 7
+  DEPLOY_SNIP_ID: 33
+  DEPLOY_SNIP_FILENAME: ENVS.txt
+  TOKEN_API_GROUP_GAMES: "secret_value"
+  TOKEN_API_PROJECT_NOTES: "secret_value"
+  TOKEN_API_SELF_READ: "secret_value"
+  GITLAB_API_URL: ${CI_API_V4_URL}
+  BLOG_KEY: "secret_value"
+  DEFAULT_GAME_BRANCH_REF: "master"
+
+default:
+  before_script:
+  - SERVICE_NAME=${SERVICE_NAME//\./-}
+
+.docker_login: &docker_login
+  docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
+.apply_registry_secret: &apply_registry_secret
+  - kubectl create secret -n $KUBE_NAMESPACE docker-registry gitlab-registry 
+    --docker-server="$CI_REGISTRY" --docker-username="$CI_REGISTRY_USER"
+    --docker-password="$CI_REGISTRY_PASSWORD" -o yaml --dry-run=client | kubectl apply -n $KUBE_NAMESPACE -f -
+
+.not_protected: &not_protected
+  '$CI_COMMIT_REF_NAME != "dev" && $CI_COMMIT_REF_NAME != "master" && ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web")'
+
+.is_dev_branch: &is_dev_branch
+  '$CI_COMMIT_REF_NAME == "dev" && ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web")'
+
+.is_web_master_patch: &is_web_master_patch
+  '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master" && $RELEASE == null'
+
+.is_web_master_release: &is_web_master_release
+  '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master" && $RELEASE != null'
+
+.trigger_deploy_prod_job: &trigger_deploy_prod_job
+  - curl -X POST --form "variables[SKIP_BETA]=$SKIP_BETA"
+    "${CI_SERVER_URL}/api/v4/projects/$CI_PROJECT_ID/trigger/pipeline?token=${CI_JOB_TOKEN}&ref=${CI_COMMIT_REF_NAME}"
+
+.get_deploy_snippet: &get_deploy_snippet
+  - curl "${CI_API_V4_URL}/projects/$DEPLOY_SNIP_PROJECT_ID/snippets/$DEPLOY_SNIP_ID/files/main/$DEPLOY_SNIP_FILENAME/raw" > $DEPLOY_SNIP_FILENAME
+
+.update_deploy_snippet: &update_deploy_snippet
+  - |
+    cat <<EOF > snippet.json
+    {"files":[{ "action": "update", "file_path": "$DEPLOY_SNIP_FILENAME","content" : "$(printf '%s\\n' $(<$DEPLOY_SNIP_FILENAME))"}]}
+    EOF
+  - 'curl -X PUT -H "PRIVATE-TOKEN: ${TOKEN_API_SNIPPET_WRITE}" -H "Content-Type: application/json" -d @snippet.json
+    "${CI_API_V4_URL}/projects/$DEPLOY_SNIP_PROJECT_ID/snippets/$DEPLOY_SNIP_ID"'
+
+.get_current_version: &get_current_version
+  - DOCKER_SERVICE_NAME="main:"
+  - PROD_IMAGE=$(awk "/${DOCKER_SERVICE_NAME}/{getline; print; exit;}" docker-compose.yml)
+  - CURVER=$(echo $PROD_IMAGE | cut -d ":" -f3 | cut -d "-" -f1)
+
+.exit_if_sha_matches_patch: &exit_if_sha_matches_patch
+  - LAST_CI_SHA=$(git log --oneline | grep -A 1 "Patch\|Release" | cut -d " " -f1 | awk NR==1) || echo 0 # Last Patch/Release commit
+  - echo $LAST_CI_SHA
+  - "[[ $COMMIT_SHA = $LAST_CI_SHA ]] && exit 0"
+
+.get_sha_to_build: &get_sha_to_build
+  - COMMIT_SHA=$(git log -1 --pretty=format:%h)
+  - PATCH_SHA=$(git log --oneline | grep -A 1 Patch | cut -d " " -f1 | awk NR==1) || echo 0 # Last Patch commit
+  - RELEASE_SHA=$(git log --oneline | grep -A 1 Release | cut -d " " -f1 | awk NR==1) || echo 0 # Last Release commit
+  - IMAGE_SHA=$(git log --oneline | grep -A 1 Patch | cut -d " " -f1 | awk NR==2) || echo 0 # Last docker-compose tag
+    #Use commit. If commit matches patch use last image. If commit matches release rebuild release
+  - SHA_TO_BUILD="-${COMMIT_SHA}"
+  - '[[ $COMMIT_SHA = $PATCH_SHA ]] && SHA_TO_BUILD="-$IMAGE_SHA"'
+  - '[[ $COMMIT_SHA = $RELEASE_SHA ]] && SHA_TO_BUILD=""'
+  - echo $COMMIT_SHA $IMAGE_SHA $PATCH_SHA $RELEASE_SHA
+
+.create_rc: &create_rc
+  - *get_current_version
+  - MAJOR_MINOR=$(echo $CURVER | cut -d "." -f 1-2)
+  - PATCH=$(echo $CURVER | cut -d "." -f 3)
+  - NEXT_PATCH=$(($PATCH + 1))
+  - RC=${MAJOR_MINOR}.${NEXT_PATCH}-rc
+
+.create_next_version: &create_next_version
+  - *get_current_version
+  - MAJOR=$(echo $CURVER | cut -d "." -f 1)
+  - MINOR=$(echo $CURVER | cut -d "." -f 2)
+  - PATCH=$(echo $CURVER | cut -d "." -f 3)
+  - NEXT_MAJOR=$(($MAJOR + 1))
+  - NEXT_MINOR=$(($MINOR + 1))
+  - NEXT_PATCH=$(($PATCH + 1))
+  - "[[ $RELEASE == 'major' ]] && VERSION=${NEXT_MAJOR}.0.0"
+  - "[[ $RELEASE == 'minor' ]] && VERSION=${MAJOR}.${NEXT_MINOR}.0"
+  - "[[ $RELEASE == 'patch' ]] && VERSION=${MAJOR}.${MINOR}.${NEXT_PATCH}"
+
+.add_md: &add_md
+  - 'ARTIFACTS_URL="$CI_SERVER_URL/api/v4/projects/100/jobs/artifacts/master/download?job=bundle"'
+  - 'curl -JO --header "PRIVATE-TOKEN: $TOKEN_API_PROJECT_NOTES" "$ARTIFACTS_URL"'
+  - unzip -o artifacts.zip -d ./server/static/md/
+  - rm -rf artifacts.zip
+
+.add_game: &add_game
+  - 'ARTIFACTS_URL="$CI_SERVER_URL/api/v4/projects/$PROJECT_ID/jobs/artifacts/$BRANCH_REF/download?job=build_webgl"'
+  - 'curl -JO --header "PRIVATE-TOKEN: $TOKEN_API_GROUP_GAMES" "$ARTIFACTS_URL"'
+  - 'COMMIT_URL="$CI_SERVER_URL/api/v4/projects/$PROJECT_ID/repository/commits/$BRANCH_REF"'
+  - 'GAME_SHA=$(curl --header "PRIVATE-TOKEN: $TOKEN_API_GROUP_GAMES" "$COMMIT_URL" | jq ".id")'
+  - echo $GAME_SHA
+  - 'GAME_FOLDER=$(unzip -Z1 artifacts.zip | sed -n "s|\/||;1p")'
+  - echo "window.GAMES[\"$GAME_FOLDER\"] = $GAME_SHA" >> ./src/config/globals.js
+  - unzip -o artifacts.zip -d ./server/static/unity
+  - rm -rf artifacts.zip
+
+.game1: &game1
+  - PROJECT_ID=99
+  - "[[ -n $GAME1_BRANCH_REF ]] && BRANCH_REF=$GAME1_BRANCH_REF"
+  - *add_game
+.game2: &game2
+  - PROJECT_ID=63
+  - TOKEN_API_GROUP_GAMES=$TOKEN_API_PROJECT_GAME2
+  - "[[ -n $GAME2_BRANCH_REF ]] && BRANCH_REF=$GAME2_BRANCH_REF"
+  - *add_game
+.game3: &game3
+  - PROJECT_ID=98
+  - "[[ -n $GAME3_BRANCH_REF ]] && BRANCH_REF=$GAME3_BRANCH_REF"
+  - *add_game
+.game4: &game4
+  - PROJECT_ID=97
+  - "[[ -n $GAME4_BRANCH_REF ]] && BRANCH_REF=$GAME4_BRANCH_REF"
+  - *add_game
+.game5: &game5
+  - PROJECT_ID=95
+  - "[[ -n $GAME5_BRANCH_REF ]] && BRANCH_REF=$GAME5_BRANCH_REF"
+  - *add_game
+.game6: &game6
+  - PROJECT_ID=96
+  - "[[ -n $GAME6_BRANCH_REF ]] && BRANCH_REF=$GAME6_BRANCH_REF"
+  - *add_game
+
+.add_games: &add_games
+  - BRANCH_REF=$DEFAULT_GAME_BRANCH_REF
+  - *game1
+  - *game2
+  - *game3
+  - *game4
+  - *game5
+  - *game6
+
+workflow:
+  rules:
+  - if: $CI_COMMIT_TAG
+    when: never
+  - if: '$ONLY_DEPLOY_PROD == "true" || $STOP_PROD == "true"'
+    variables:
+      SKIP_WEB_DEFAULT_RUN: "true"
+  - when: always
+
+echo_env_vars:
+  stage: build
+  script:
+  - echo $CI_PIPELINE_SOURCE
+  - echo $CI_COMMIT_REF_NAME
+  - echo $CI_DEFAULT_BRANCH
+  - echo $CI_COMMIT_SHORT_SHA
+  - echo $CI_SERVER_URL
+  - echo $CI_REGISTRY_IMAGE
+  - echo $CI_PROJECT_URL
+  - echo $CI_PROJECT_NAMESPACE
+  - echo $CI_PROJECT_NAME
+  - echo $CI_PROJECT_PATH
+  - echo $CI_PROJECT_ID
+  - echo $CI_KUBERNETES_ACTIVE
+  - echo $CI_CONFIG_PATH
+  rules:
+  - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+
+
+########################
+#### FEATURE BRANCH
+########################
+build_review:
+  stage: build
+  #variables:
+  #  DEFAULT_GAME_BRANCH_REF: "dev"
+  script:
+  - *docker_login
+  - *add_md
+  - *add_games
+  - docker pull $PROJECT_APP_IMAGE:dev || echo 0
+  - docker build -f Dockerfile --force-rm --cache-from $PROJECT_APP_IMAGE:dev --target src -t $PROJECT_APP_IMAGE:$CI_COMMIT_SHORT_SHA .
+  - docker push $PROJECT_APP_IMAGE:$CI_COMMIT_SHORT_SHA
+  rules:
+  - if: $CI_PIPELINE_SOURCE != "push" && $CI_PIPELINE_SOURCE != "web"
+    when: never
+  - if: *not_protected
+
+deploy_review:
+  stage: deploy
+  tags:
+  - kubernetes
+  script:
+  - echo "$KUBE_NAMESPACE"
+  - APPNAME=${CI_ENVIRONMENT_SLUG}-${SERVICE_NAME}
+  - 'echo "APPNAME: ${APPNAME}"'
+  - 'echo "URL: http://${CI_ENVIRONMENT_SLUG}.${KUBE_NAMESPACE}.${SUBDOMAIN}.${KUBE_INGRESS_BASE_DOMAIN}"'
+  - *apply_registry_secret
+  - bash kube-deploy.sh -i ${PROJECT_APP_IMAGE} -a ${APPNAME} -t $CI_COMMIT_SHORT_SHA -n $KUBE_NAMESPACE -d
+  - kubectl rollout status -w "deployment/${APPNAME}" -n $KUBE_NAMESPACE
+  - kubectl rollout status -w "deployment/${APPNAME}-tmpdb" -n $KUBE_NAMESPACE || echo 0
+  - kubectl get deploy,svc,pod -n $KUBE_NAMESPACE
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: "http://${CI_ENVIRONMENT_SLUG}.${KUBE_NAMESPACE}.${SUBDOMAIN}.${KUBE_INGRESS_BASE_DOMAIN}"
+    on_stop: stop_review
+    auto_stop_in: 2 hours
+  rules:
+  - if: $CI_KUBERNETES_ACTIVE != "true"
+    when: never
+  - if: *not_protected
+
+stop_review:
+  stage: stop
+  tags:
+  - kubernetes
+  variables:
+    GIT_STRATEGY: none
+  script:
+  - echo "Stop commit"
+  - echo ${KUBE_NAMESPACE}
+  - APPNAME=${CI_ENVIRONMENT_SLUG}-${SERVICE_NAME}
+  - kubectl delete deploy,svc,cm,secret -l "app in (${APPNAME}, ${APPNAME}-tmpdb)" || exit 0;
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    action: stop
+  rules:
+  - if: $CI_KUBERNETES_ACTIVE != "true"
+    when: never
+  - if: *not_protected
+    when: manual
+
+
+########################
+########################
+#### DEV BRANCH
+########################
+########################
+
+build_rc:
+  stage: build
+  script:
+  - *docker_login
+  - *add_md
+  - *add_games
+  - *create_rc
+  - docker pull $PROJECT_APP_IMAGE:dev || echo 0
+  - docker pull $PROJECT_APP_IMAGE:$RC || echo 0
+  - docker build -f Dockerfile --force-rm --pull --cache-from $PROJECT_APP_IMAGE:dev --target src -t $PROJECT_APP_IMAGE:dev .
+  - "docker build -f Dockerfile --force-rm --pull --cache-from $PROJECT_APP_IMAGE:dev \
+    --cache-from $PROJECT_APP_IMAGE:$RC --target prod -t $PROJECT_APP_IMAGE:$RC ."
+  - docker push $PROJECT_APP_IMAGE:dev
+  - docker push $PROJECT_APP_IMAGE:$RC
+  rules:
+  - if: *is_dev_branch
+
+deploy_rc:
+  stage: deploy
+  tags:
+  - kubernetes_prod
+  script:
+  - *create_rc
+  - echo "$KUBE_NAMESPACE"
+  - 'echo "APPNAME: ${SERVICE_NAME}"'
+  - 'echo "URL: http://${SUBDOMAIN}.${KUBE_INGRESS_BASE_DOMAIN}"'
+  - *apply_registry_secret
+  - bash kube-deploy.sh -r ${CI_REGISTRY} -t $RC -n $KUBE_NAMESPACE -d
+  - kubectl rollout status -w "deployment/${SERVICE_NAME}" -n $KUBE_NAMESPACE
+  - kubectl rollout status -w "deployment/${SERVICE_NAME}-tmpdb" -n $KUBE_NAMESPACE || echo 0
+  - kubectl get deploy,svc,pod -n $KUBE_NAMESPACE
+  environment:
+    name: dev
+    url: "http://${SUBDOMAIN}.${KUBE_INGRESS_BASE_DOMAIN}"
+    on_stop: stop_rc
+    auto_stop_in: 2 hours
+    kubernetes:
+      namespace: dev
+  rules:
+  - if: $CI_KUBERNETES_ACTIVE != "true"
+    when: never
+  - if: *is_dev_branch
+
+stop_rc:
+  stage: stop
+  tags:
+  - kubernetes_prod
+  variables:
+    GIT_STRATEGY: none
+  script:
+  - echo "Stop rc"
+  - kubectl delete deploy,svc,cm,secret -l "app in (${SERVICE_NAME}, ${SERVICE_NAME}-tmpdb)" || exit 0;
+  environment:
+    name: dev
+    action: stop
+    kubernetes:
+      namespace: dev
+  rules:
+  - if: $CI_KUBERNETES_ACTIVE != "true"
+    when: never
+  - if: *is_dev_branch
+    when: manual
+
+
+########################
+########################
+#### MASTER BRANCH
+########################
+########################
+
+### Only build on each new push to master
+build_beta:
+  stage: build
+  tags:
+  - prod
+  script:
+  - *docker_login
+  - *add_md
+  - *add_games
+  - *create_rc
+  - docker pull $PROJECT_APP_IMAGE:dev
+  - docker pull $PROJECT_APP_IMAGE:$RC || echo 0 #Remove echo if we ALWAYS want a rc build first
+  - "docker build -f Dockerfile --force-rm --pull --cache-from $PROJECT_APP_IMAGE:dev \
+    --cache-from $PROJECT_APP_IMAGE:$RC --target prod -t $PROJECT_APP_IMAGE:${RC}-beta ."
+  - docker push $PROJECT_APP_IMAGE:${RC}-beta
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "master"
+  - if: $BUILD_BETA == "true" && $CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master"
+
+#### Cannot manually web run directly after a release without BUILD_BETA, no properly tagged beta build (nothing new)
+#### The point is to capture the merge/push to master to prepare for release (possibly start doing a release branch)
+#### Beta environment can be restarted from gitlab UI
+deploy_beta:
+  stage: deploy
+  tags:
+  - kubernetes_prod
+  script:
+  - *create_rc
+  - echo "$KUBE_NAMESPACE"
+  - 'echo "APPNAME: ${SERVICE_NAME}"'
+  - 'echo "URL: https://${SUBDOMAIN}.${KUBE_INGRESS_BASE_DOMAIN}"'
+  - *apply_registry_secret
+  - bash kube-deploy.sh -r ${CI_REGISTRY} -t ${RC}-beta -n $KUBE_NAMESPACE -d
+  - kubectl rollout status -w "deployment/${SERVICE_NAME}" -n $KUBE_NAMESPACE
+  - kubectl rollout status -w "deployment/${SERVICE_NAME}-tmpdb" -n $KUBE_NAMESPACE || echo 0
+  - kubectl get deploy,svc,pod -n $KUBE_NAMESPACE
+  environment:
+    name: beta
+    url: "https://${SUBDOMAIN}.${KUBE_INGRESS_BASE_DOMAIN}"
+    on_stop: stop_beta
+    auto_stop_in: 7 days
+    kubernetes:
+      namespace: beta
+  rules:
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true"'
+    when: never
+  - if: '$SKIP_BETA == "true" ||  $RELEASE != null || $CI_KUBERNETES_ACTIVE != "true"'
+    when: never
+  - if: ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_REF_NAME == "master"
+
+stop_beta:
+  stage: stop
+  tags:
+  - kubernetes_prod
+  variables:
+    GIT_STRATEGY: none
+  script:
+  - echo "Stop beta"
+  - kubectl delete deploy,svc,cm,secret -l "app in (${SERVICE_NAME}, ${SERVICE_NAME}-tmpdb)" || exit 0;
+  environment:
+    name: beta
+    action: stop
+    kubernetes:
+      namespace: beta
+  rules:
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true"'
+    when: never
+  - if: '$SKIP_BETA == "true" ||  $RELEASE != null || $KEEP_BETA != null || $CI_KUBERNETES_ACTIVE != "true"'
+    when: never
+  - if: ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_REF_NAME == "master"
+    when: manual
+
+###############################
+###   Not Tag Commit  -  $RELEASE is not defined
+###############################
+commit_patch:
+  stage: commit
+  tags:
+  - prod
+  script:
+  - *get_current_version
+  - echo $CURVER
+  - COMMIT_SHA=$(git log -1 --pretty=format:%h)
+  - echo $COMMIT_SHA
+  - *exit_if_sha_matches_patch
+  - sed -i "s|${CURVER}-*.*|${CURVER}-${COMMIT_SHA}|" docker-compose.yml
+  - git add docker-compose.yml
+  - 'git commit -m "Patch: ${CURVER}-${COMMIT_SHA}"'
+  - 'git remote set-url origin https://${TOKEN_REPO_WRITE_NAME}:${TOKEN_REPO_SELF_WRITE}@$CI_SERVER_HOST/${CI_PROJECT_PATH}.git'
+  - git push -o ci.skip origin HEAD:master
+  rules:
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true"'
+    when: never
+  - if: '$SKIP_BETA == "true" && $CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master" && $RELEASE == null'
+    when: on_success
+  - if: *is_web_master_patch
+    when: manual
+
+release_patch:
+  stage: release
+  tags:
+  - prod
+  script:
+  - *docker_login
+  - *add_md
+  - *add_games
+  - *create_rc
+  - echo $CURVER
+  - echo $RC
+  - docker pull $PROJECT_APP_IMAGE:dev
+  - docker pull $PROJECT_APP_IMAGE:${RC}-beta || echo 0 #Remove echo if we ALWAYS want a rc-beta build first
+  - *get_sha_to_build
+  - echo $SHA_TO_BUILD
+  - sed -i "s|${CURVER}-*.*|${CURVER}${SHA_TO_BUILD}|" docker-compose.yml
+  - "docker build -f Dockerfile --force-rm --pull --cache-from $PROJECT_APP_IMAGE:dev --cache-from $PROJECT_APP_IMAGE:${RC}-beta \
+    --target prod -t $PROJECT_APP_IMAGE:${CURVER}${SHA_TO_BUILD} ."
+  - docker tag $PROJECT_APP_IMAGE:${CURVER}${SHA_TO_BUILD} $PROJECT_APP_IMAGE:latest
+  - docker push $PROJECT_APP_IMAGE:${CURVER}${SHA_TO_BUILD}
+  - docker push $PROJECT_APP_IMAGE:latest
+  - *trigger_deploy_prod_job
+  rules:
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true"'
+    when: never
+  - if: *is_web_master_patch
+
+
+
+###############################
+###   Tag Version Commit -  $RELEASE is defined
+###############################
+commit_version:
+  stage: commit
+  tags:
+  - prod
+  script:
+  - echo $RELEASE
+  - *create_next_version
+  - echo $CURVER
+  - echo ${VERSION}
+  - 'curl -H "PRIVATE-TOKEN: ${TOKEN_API_SELF_READ}"
+    "${CI_API_V4_URL}/projects/$CI_PROJECT_ID/merge_requests?state=merged&target_branch=$CI_DEFAULT_BRANCH" > mreq.json'
+  - curl -O $CI_SERVER_URL/os/changelogger/-/raw/master/genlog.sh
+  - bash genlog.sh $RELEASE -s $CI_SERVER_URL -p $CI_PROJECT_PATH -t $CURVER -v -m mreq.json -n $NOTES
+  - git add CHANGELOG.md 2>/dev/null || echo 0
+  - sed -i "s|${CURVER}-*.*|${VERSION}|" docker-compose.yml
+  - git add docker-compose.yml
+  - 'git commit -m "Release: ${VERSION}"'
+  - git tag ${VERSION}
+  - 'git remote set-url origin https://${TOKEN_REPO_WRITE_NAME}:${TOKEN_REPO_SELF_WRITE}@$CI_SERVER_HOST/${CI_PROJECT_PATH}.git'
+  - git push -o ci.skip origin HEAD:master --tags
+  rules:
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true"'
+    when: never
+  - if: '$SKIP_BETA == "true" && $CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master" && $RELEASE != null'
+    when: on_success
+  - if: *is_web_master_release
+    when: manual
+
+release_version:
+  stage: release
+  tags:
+  - prod
+  script:
+  - *docker_login
+  - *add_md
+  - *add_games
+  - echo $RELEASE
+  - *create_next_version
+  - echo $CURVER
+  - echo ${VERSION}
+    ### NOTE: With this method we ALWAYS need a patch on master before a release
+  - IMAGE_SHA=$(git log --oneline | grep -A 1 Patch | cut -d " " -f1 | awk NR==2) # Commit before Patch commit
+  - docker pull $PROJECT_APP_IMAGE:dev
+  - docker pull $PROJECT_APP_IMAGE:${CURVER}-${IMAGE_SHA}
+  - sed -i "s|${CURVER}-*.*|${VERSION}|" docker-compose.yml
+  - "docker build -f Dockerfile --force-rm --pull --cache-from $PROJECT_APP_IMAGE:dev \
+    --cache-from $PROJECT_APP_IMAGE:${CURVER}-${IMAGE_SHA} --target prod -t $PROJECT_APP_IMAGE:$VERSION ."
+  - docker tag $PROJECT_APP_IMAGE:$VERSION $PROJECT_APP_IMAGE:latest
+  - docker push $PROJECT_APP_IMAGE:$VERSION
+  - docker push $PROJECT_APP_IMAGE:latest
+  - *trigger_deploy_prod_job
+  rules:
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true"'
+    when: never
+  - if: *is_web_master_release
+
+
+
+###############################
+###   Deploy from master branch
+###############################
+
+
+deploy_production:
+  stage: deploy_prod
+  tags:
+  - kubernetes_prod
+  variables:
+    AUTH_URL: ${CI_SERVER_URL}
+  script:
+  - echo "$KUBE_NAMESPACE"
+  - 'echo "APPNAME: ${SERVICE_NAME}"'
+  - 'echo "URL: https://${SUBDOMAIN}.${KUBE_INGRESS_BASE_DOMAIN}"'
+  - *apply_registry_secret
+  - bash kube-deploy.sh -r ${CI_REGISTRY} -n $KUBE_NAMESPACE
+  - kubectl rollout status -w "deployment/${SERVICE_NAME}" -n $KUBE_NAMESPACE
+  - kubectl get deploy,svc,pod -n $KUBE_NAMESPACE
+  - *get_deploy_snippet
+  - FOUND_ID=$(sed -n "/^$CI_PROJECT_ID$/p" $DEPLOY_SNIP_FILENAME)
+  - '[[ -n $FOUND_ID ]] && exit 0'
+  - echo "$CI_PROJECT_ID" >> $DEPLOY_SNIP_FILENAME
+  - *update_deploy_snippet
+  environment:
+    name: production
+    url: "https://${SUBDOMAIN}.${KUBE_INGRESS_BASE_DOMAIN}"
+    kubernetes:
+      namespace: production
+  rules:
+  - if: $CI_KUBERNETES_ACTIVE != "true"
+    when: never
+  - if: $ONLY_DEPLOY_PROD == "true"
+    when: always
+  - if: '$SKIP_BETA == "true" && $CI_PIPELINE_SOURCE == "pipeline" && $CI_COMMIT_REF_NAME == "master"'
+    when: on_success
+  - if: '$CI_PIPELINE_SOURCE == "pipeline" && $CI_COMMIT_REF_NAME == "master"'
+    when: manual
+
+
+stop_production:
+  stage: stop_prod
+  tags:
+  - kubernetes_prod
+  variables:
+    GIT_STRATEGY: none
+  script:
+  - echo "Stop prod"
+  - kubectl delete deploy,svc,cm,secret -l "app in (${SERVICE_NAME})" || exit 0;
+  - *get_deploy_snippet
+  - sed -i "/^$CI_PROJECT_ID$/d" $DEPLOY_SNIP_FILENAME
+  - *update_deploy_snippet
+  environment:
+    name: production
+    action: stop
+    kubernetes:
+      namespace: production
+  rules:
+  - if: '$STOP_PROD == "true" && $CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master"'
+
+## TODO: Either we configure an elevated runner to delete the tmp namespace after stop/merge (if possible).
+##  Or we run a single project namespace for the review cluster (we setup 4, review dev beta prod. 3 are not gitlab managed)
+## Only concern with NS-per-env is if we delete the env and a duplicate gets made will it cause an issue (seemed so before) - needs testing
+.cleanup:
+  stage: clean
+  script:
+  - echo "CLEAN"
+  rules:
+  - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME != "dev" && $CI_COMMIT_REF_NAME != "master"'
+    when: manual

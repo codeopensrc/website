@@ -1,0 +1,96 @@
+#ChatPage {
+    vertical-align: top;
+    margin: auto;
+    border: 1px solid black;
+    min-width: 1095px;
+    > h1 {
+        text-align: center;
+        margin: 10px;
+    }
+    #chatroom {
+        display: inline-block;
+        border: 1px solid black;
+        height: 400px;
+        width: 15%;
+        > h3 { text-align: center; }
+        > h2 { margin: 5px;}
+    }
+    #chatBox {
+        display: inline-block;
+        border: 1px solid black;
+        height: 400px;
+        width: 40%;
+        vertical-align: top;
+        .msgBar {
+            border: 1px solid black;
+            margin: 3px auto;
+            width: 95%;
+            vertical-align: top;
+            .chatButton {
+                margin: 3px;
+                vertical-align: top;
+                display: inline-block;
+            }
+            .msgInput{
+                margin: 4px;
+                display: inline-block;
+                width: 82%;
+            }
+        }
+        #chat {
+            border: 1px dashed black;
+            margin: 10px;
+            height: 88%;
+            overflow: auto;
+            .DarkBG { background-color: #BBB8B8; }
+            .LightBG { background-color: #EAEAEA; }
+            .chatText {
+                width: 100%;
+                display: inline-block;
+                font-size: 14px;
+            }
+        }
+    }
+    #videoChatBox {
+        display: inline-block;
+        border: 1px solid black;
+        vertical-align: top;
+        text-align: center;
+        width: 44%;
+        min-height: 400px;
+        min-width: 480px;
+        p { font-size:16px; }
+        #localVideoDiv {
+            vertical-align: top;
+            display: inline-block;
+            width: 160px;
+            margin: 10px 40px;
+            #localStream {
+                border: 1px solid green;
+                width: 160px;
+                height: 120px;
+            }
+        }
+        .remoteVideoPeer {
+            width: 220px;
+            margin: 10px;
+            display: inline-block;
+            .remoteVideo {
+                border: 1px solid blue;
+                width: 220px;
+            }
+        }
+    }
+    #bottom {
+        > h2 {
+            text-align: center;
+            font-style: italic;
+            &:last-of-type { margin-bottom: 20px; }
+        }
+        > h1 {
+            &:first-of-type { margin-top: 30px; }
+            text-align: center;
+        }
+    }
+
+}

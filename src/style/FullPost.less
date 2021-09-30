@@ -1,0 +1,63 @@
+@import "vars.less";
+
+#fullPost {
+	position: relative;
+	left: @leftAmt;
+	top: 2em;
+	width: @rightWidth;
+	background: white;
+	z-index: 10;
+	//post segment
+	.post {
+		margin: 0 0 5em 0;
+		//validation message
+		.validate	{
+			background:red;
+			color:white;
+			font-size: 3em;
+			margin:auto;
+			text-align: center;
+			width: 30em;
+		}
+		//title
+		.postTitle {
+			font-size: 3.3em;
+			font-weight: bold;
+			margin: 0 0 .2em;
+			//title input
+			.postTitleInput{
+				font-size: 1em;
+				width:80%;
+			}
+			a {
+				text-decoration: none;
+				color: black;
+			}
+		}
+		//date of post
+		.postDate {
+			font-size: 1.7em;
+			margin: 0 0 .5em .1em;
+		}
+		//post message
+		.postBody {
+			font-size: 1.8em;
+			//post message input
+			.postBodyInput {
+				font-size: 1em;
+				height: 15em;
+				width:99.5%;
+			}
+		}
+		//delete button
+		.delete{
+			float: right;
+			font-size: 2em;
+			&:hover {
+				cursor: pointer;
+				color:red;
+			}
+		}
+	}
+//end of #blog
+}

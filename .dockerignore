@@ -1,0 +1,10 @@
+node_modules/
+logs
+.git
+
+npm-debug.log
+.DS_Store
+pub/app.bundle.js
+pub/index.html
+
+.obsidian

@@ -1,0 +1,14 @@
+.git
+node_modules/
+logs/
+ignore/*
+dumps
+.env
+*.swp
+*.vim
+
+npm-debug.log
+.DS_Store
+
+*bundle.js
+pub/index.html

@@ -1,0 +1,90 @@
+@import "vars.less";
+
+@media (width: 980px){
+	body #header {
+		font-size: 12px;
+		position: relative;
+		width: 100%;
+		margin: 0;
+		#twitterContainer{
+			#twitterInner {
+				width: 22em;
+				.twitterAvatar {
+					width: 100px;
+				}
+			}
+		}
+		.fbIcon {
+			height: 4em;
+			width: 4em;
+		}
+		.navBtn {
+			font-size: 40px;
+		}
+	}
+	body #blog {
+		position: relative;
+		width: 90%;
+		left: 0;
+		margin: auto;
+	}
+}
+
+
+
+*{
+	margin:0;
+	padding:0;
+}
+
+body {
+	font-size: 10px;
+	min-width: 980px;
+    // background: #030e21;
+}
+
+// NOTE: Attempt to start using gradient-bg
+// #gradient-bg {
+//     // background: linear-gradient(to right top, #c817d7, #ed33b8);
+//     background: linear-gradient(to right top, #ec05ff, #534950);
+//     pointer-events: none;
+//     position: fixed;
+//     height: 100%;
+//     width: 100%;
+//     top: 0;
+//     left: 0;
+//     bottom: 0;
+//     opacity: 0.2;
+// }
+//
+//
+// #index {
+//     position: relative;
+//     background: none;
+//     color: white;
+// }
+
+
+// NOTE: Some older stuff for code-style implementation
+// pre {
+// 	white-space: pre-line;
+//     text-align: left;
+// }
+
+// .code {
+// 	background: #484848;
+// 	font-size: 13px;
+// 	color: white;
+// 	font-family: monospace;
+// 	padding: 3px 8px;
+// 	&.sameLine { display: inline; }
+// }
+
+.code-sameLine, .sameLine {
+	background: #484848;
+	font-size: 13px;
+	color: white;
+	font-family: monospace;
+	padding: 3px 8px;
+	display: inline;
+}
