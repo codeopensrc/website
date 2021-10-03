@@ -38,6 +38,7 @@ const Fullpage = React.createClass({
             url: data.url
         }, () => {
             $(window).scrollTop(0);
+            this.props.updateSnippetScripts()
         });
     }, "json");
 
