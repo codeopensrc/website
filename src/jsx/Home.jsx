@@ -21,7 +21,7 @@ const Home = React.createClass({
     return (
         <div>
 			<Header />
-			<Blog />
+			<Blog updateSnippetScripts={this.props.updateSnippetScripts}/>
 			<Footer />
 		</div>
     );
