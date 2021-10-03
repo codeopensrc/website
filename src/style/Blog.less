@@ -2,14 +2,14 @@
 
 
 #blog {
-	position: relative;
-	left: @leftAmt;
-	top: 2em;
-	width: @rightWidth;
-	background: white;
-	z-index: 10;
-	//post segment
-	.post {
+    position: relative;
+    left: @leftAmt;
+    top: 2em;
+    width: @rightWidth;
+    background: white;
+    z-index: 10;
+    //post segment
+    .post {
 		margin: 0 0 5em 0;
 		//validation message
 		.validate	{
@@ -59,6 +59,17 @@
 				color:red;
 			}
 		}
-	}
+
+        .snippet {
+            max-height: 70vh;
+            width: 71vw;
+            margin-left: 1.5vw;
+            display: flex;
+            border: 1px solid #dbdbdb;
+            border-width: 1px 1px 1px 0;
+            border-radius: 7px;
+            overflow-x: scroll;
+        }
+    }
 //end of #blog
 }
