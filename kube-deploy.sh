@@ -91,7 +91,7 @@ fi
 
 ## Create kubernetes secret for app and create a hash
 ## Hash is used to force a redeploy on secret change
-SECRET_YAML_HASH=`<<EOF tee >(kubectl apply -f - >/dev/null) | sha256sum
+SECRET_YAML=$(cat <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -104,9 +104,11 @@ stringData:
   BLOG_KEY: "${BLOG_KEY}"
   TOKEN_API_SELF_READ: "${TOKEN_API_SELF_READ}"
 EOF
-`
+)
+echo "$SECRET_YAML" | kubectl apply -f -
+SECRET_YAML_HASH=$(echo "$SECRET_YAML" | sha256sum)
 
-CONFIG_YAML_HASH=`<<EOF tee >(kubectl apply -f - >/dev/null) | sha256sum
+CONFIG_YAML=$(cat <<EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -121,11 +123,13 @@ data:
   DEV_DATABASE_URL:     "${DEV_DATABASE_URL}"
   GITLAB_API_URL:       "${GITLAB_API_URL}"
 EOF
-`
+)
+echo "$CONFIG_YAML" | kubectl apply -f -
+CONFIG_YAML_HASH=$(echo "$CONFIG_YAML" | sha256sum)
 
 ## Create a kubernetes service
 ## Create a kubernetes deployment
-OUTPUT=`kubectl apply -f - <<EOF
+OUTPUT=$(kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Service
 metadata:
@@ -207,7 +211,7 @@ spec:
           initialDelaySeconds: 5
 
 EOF
-`
+)
 
 echo "$OUTPUT"
 
@@ -225,7 +229,7 @@ if [[ -n $USE_DB && $NAMESPACE != "production" ]]; then
 
 	APPNAME=$DB_APPNAME
 
-	CONFIG_YAML_HASH=`<<-EOF tee >(kubectl apply -f - >/dev/null) | sha256sum
+	CONFIG_YAML=$(cat <<-EOF
 	apiVersion: v1
 	kind: ConfigMap
 	metadata:
@@ -235,7 +239,9 @@ if [[ -n $USE_DB && $NAMESPACE != "production" ]]; then
 	data:
 	  MONGO_INITDB_DATABASE: "${DB_NAME}"
 	EOF
-	`
+	)
+	echo "$CONFIG_YAML" | kubectl apply -f -
+	CONFIG_YAML_HASH=$(echo "$CONFIG_YAML" | sha256sum)
 
 	kubectl apply -f - <<-EOF
 	apiVersion: v1

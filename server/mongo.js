@@ -2,8 +2,6 @@
 
 const CONSUL_HOST = process.env.CONSUL_HOST || "172.17.0.1";
 
-const url = require("url");
-const fs = require("fs");
 const consul = require('consul')({host: CONSUL_HOST});
 const serverState = require("./serverState.js");
 const auth = require("./auth.js");
