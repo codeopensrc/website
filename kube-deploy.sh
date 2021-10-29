@@ -53,7 +53,6 @@ REGISTER_SERVICE="false"
 
 CI_ENVIRONMENT_SLUG=${CI_ENVIRONMENT_SLUG:-"dev"}
 CI_PROJECT_PATH_SLUG=${CI_PROJECT_PATH_SLUG:-$APPNAME}
-DB_NAME=${MONGO_DB_NAME:-mongo}
 
 echo "APPNAME: $APPNAME"
 echo "IMAGE: $IMAGE"
@@ -66,6 +65,8 @@ if [[ -f .env ]]; then
 else
     echo "No .env found, some variables may not be available in deployment.";
 fi
+
+DB_NAME=${MONGO_DB_NAME:-mongo}
 
 if [[ -n $USE_DB && $NAMESPACE != "production" ]]; then
     DEV_DB_IMAGE=$(awk "/${DEV_DB_SERVICE_NAME}$/{getline; print; exit;}" docker-compose.yml)

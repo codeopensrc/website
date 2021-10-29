@@ -22,7 +22,7 @@ const Route = React.createClass({
     generateIframeTag: function(repoid, snipid, src) {
         const elementId = `${repoid}-${snipid}`;
         const styles = `<style>
-        *{ font-size:12px; margin:0; }
+        *{ margin:0; }
         .gitlab-embed-snippets{ margin:0 !important; }
         .file-content.code{ overflow-x:unset !important; }
         </style>`;

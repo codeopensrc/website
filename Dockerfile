@@ -20,7 +20,7 @@ RUN apk add --no-cache npm=${NPM_VER} && rm -rf /var/cache/apk/* \
 COPY package.json /home/app/package.json
 RUN npm install --only=prod --no-optional --no-package-lock \
     && cp -R node_modules prod_mods \
-    && npm install --no-optional --no-package-lock
+    && npm install --no-optional
 COPY src /home/app/src
 RUN mkdir -p /home/app/pub \
     && cp src/html/* /home/app/pub/ \
@@ -40,6 +40,7 @@ ENV NODE_ENV $NODE_ENV
 COPY --from=src /usr/local/lib/node_modules/pm2 /usr/local/lib/node_modules/pm2
 RUN ln -s /usr/local/lib/node_modules/pm2/bin/pm2* /usr/bin
 COPY --from=src /home/app/prod_mods /home/app/node_modules
+COPY --from=src /home/app/package-lock.json /home/app/package-lock.json
 COPY --from=src /home/app/server /home/app/server
 COPY --from=src /home/app/pub /home/app/pub
 COPY --from=src /home/app/src/html/ /home/app/pub/

@@ -8,6 +8,9 @@
         "consul": "^0.29.0",
         "os-npm-util": "https://github.com/codeopensrc/os-npm-util/tarball/master#0.8.1"
     },
+    "resolutions": {
+        "**/ua-parser-js": "0.7.30"
+    },
     "devDependencies": {
         "babel-core": "^6.22.1",
         "babel-loader": "^6.2.4",
