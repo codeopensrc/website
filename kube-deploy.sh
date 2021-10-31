@@ -3,7 +3,7 @@
 ## grep, echo, sed, tee, awk, git, sha256sum, kubectl  all req in image/os
 ## all available in alpine/busybox (minus kubectl)
 
-while getopts "a:c:h:i:n:r:t:d" flag; do
+while getopts "a:c:h:i:n:r:t:ds" flag; do
     # These become set during 'getopts'  --- $OPTIND $OPTARG
     case "$flag" in
         a) OPT_APPNAME=${OPTARG};;
@@ -14,6 +14,7 @@ while getopts "a:c:h:i:n:r:t:d" flag; do
         r) OPT_REGISTRY=${OPTARG};;
         t) OPT_TAG=${OPTARG};;
         d) USE_DB="true";;
+        s) USE_CI_REGISTRY_SECRET="true";;
     esac
 done
 
@@ -42,6 +43,14 @@ if [[ -n $OPT_CONSUL_HOST ]]; then CONSUL_HOST=$OPT_CONSUL_HOST; fi;
 
 if [[ -n $OPT_REGISTRY ]]; then
     IMAGE=$(echo $IMAGE | sed -r "s|^[^/]*/(.*)|$OPT_REGISTRY/\1|g")
+fi
+
+if [[ -n $USE_CI_REGISTRY_SECRET ]]; then
+    IMAGE_PULL_SECRETS=$(cat <<-EOF
+	imagePullSecrets:
+      - name: gitlab-registry
+	EOF
+	)
 fi
 
 IMAGE_PORT=$(echo $PROD_PORT | sed -re 's/.*:([[:digit:]]+)".*/\1/')
@@ -181,8 +190,7 @@ spec:
         secretHash: $SECRET_YAML_HASH
         commitSha: $COMMIT_SHA
     spec:
-      imagePullSecrets:
-      - name: gitlab-registry
+      $IMAGE_PULL_SECRETS
       containers:
       - name: $APPNAME
         image: $IMAGE:$TAG
