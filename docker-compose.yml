@@ -27,8 +27,8 @@ services:
             DEV_DATABASE_URL: "mongodb://mongodb:27017/${MONGO_DB_NAME:-mongo}"
             LOG_EVERY_NUM_CHECKS: 5
             DEV_ENV:          "true"
-        depends_on:
-            - mongodb
+        #depends_on:
+        #    - mongodb
     #### Dev DB service ===
     mongodb:
         image: mongo:4.4.6

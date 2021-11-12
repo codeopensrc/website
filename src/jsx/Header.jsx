@@ -96,9 +96,7 @@ const Header = React.createClass({
 
             <div id="welcome">
                 <span className={"name"}>Casey Jones</span>
-                <span>DevOps</span>
-                <span>Web</span>
-                <span>Games</span>
+                <span>Software Dev</span>
                 <a href="https://gitlab.codeopensrc.com/explore?sort=latest_activity_desc" target="_blank">
                     <img className={"gitlabIcon mysocialicons"} src="/images/gitlab-icon-rgb-tiny.png" alt="Gitlab"/>
                 </a>

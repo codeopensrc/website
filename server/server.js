@@ -31,7 +31,7 @@ service.setConfig({
 })
 
 serverState.registerConnection("http")
-serverState.registerConnection("mongo")
+//serverState.registerConnection("mongo")
 serverState.registerConnection("ws")
 
 

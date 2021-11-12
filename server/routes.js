@@ -17,7 +17,7 @@ const GITLAB_API_URL = process.env.GITLAB_API_URL || "";
 let gameList = [];
 generateGameList((list) => gameList = list)
 
-mongojs.mongoinit();
+//mongojs.mongoinit();
 
 
 const routes = function (req, res) {
@@ -45,12 +45,12 @@ const routes = function (req, res) {
             // TODO: Review ping/pong
             case "/api/get/ping": respond("pong");
             break;
-            case "/api/get/menu": auth.getMenu(headers, respond) //username / key
-            break;
-            case "/api/get/username": getUser(headers, "user", respond) //username / key
-            break;
-            case "/api/post/logout": sendLogout(headers, respond) //username / key
-            break;
+            //case "/api/get/menu": auth.getMenu(headers, respond) //username / key
+            //break;
+            //case "/api/get/username": getUser(headers, "user", respond) //username / key
+            //break;
+            //case "/api/post/logout": sendLogout(headers, respond) //username / key
+            //break;
             case "/api/get/gamelist": respond({status: true, body: gameList})
             break;
             case `/api/get/md/${fileName}`: sendMarkdown(headers, fileName, respond);
@@ -65,29 +65,29 @@ const routes = function (req, res) {
             case `/api/get/docker_badge`: sendBadgeJson(headers, "docker", respond);
             break;
 
-            case "/ajaxGet": mongojs.retrieve("posts", headers, res)
-            break;
-            case "/ajaxGetTodo": mongojs.retrieve("todo_list", headers, res)
-            break;
-            case "/ajaxGetSingle": mongojs.retrieveOne({_id: ObjectID(parsed.id)}, "posts", headers, res)
-            break;
-            case "/ajaxGetFullPost": mongojs.retrieveOne({url: parsed.url}, "posts", headers, res)
-            break;
+            //case "/ajaxGet": mongojs.retrieve("posts", headers, res)
+            //break;
+            //case "/ajaxGetTodo": mongojs.retrieve("todo_list", headers, res)
+            //break;
+            //case "/ajaxGetSingle": mongojs.retrieveOne({_id: ObjectID(parsed.id)}, "posts", headers, res)
+            //break;
+            //case "/ajaxGetFullPost": mongojs.retrieveOne({url: parsed.url}, "posts", headers, res)
+            //break;
 
-            case "/ajaxRemoveTodoItem": mongojs.remove(parsed, "todo_list", headers, res)
-            break;
-            case "/ajaxDelete": mongojs.remove(parsed, "posts", headers, res)
-            break;
+            //case "/ajaxRemoveTodoItem": mongojs.remove(parsed, "todo_list", headers, res)
+            //break;
+            //case "/ajaxDelete": mongojs.remove(parsed, "posts", headers, res)
+            //break;
 
-            case "/ajaxEdit": mongojs.submit(parsed, "posts", headers, res)
-            break;
-            case "/ajaxNew": mongojs.submit(parsed, "posts", headers, res)
-            break;
-            case "/ajaxSubmitTodoItem": mongojs.submit(parsed, "todo_list", headers, res)
-            break;
+            //case "/ajaxEdit": mongojs.submit(parsed, "posts", headers, res)
+            //break;
+            //case "/ajaxNew": mongojs.submit(parsed, "posts", headers, res)
+            //break;
+            //case "/ajaxSubmitTodoItem": mongojs.submit(parsed, "todo_list", headers, res)
+            //break;
 
-            case "/ajaxAuth": respond({storageKey:parsed.storageKey===KEY?"accepted":"denied"})
-            break;
+            //case "/ajaxAuth": respond({storageKey:parsed.storageKey===KEY?"accepted":"denied"})
+            //break;
 
 
 

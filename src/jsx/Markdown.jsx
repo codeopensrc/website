@@ -105,16 +105,16 @@ class Markdown extends React.Component {
                 </div>
             )
         })
+        //<div id="filenav" className={"sidebars"}>
+        //    <span>Topics:</span>
+        //    {mdfiles}
+        //</div>
 
         return (
             <div id="component-markdown">
                 <Header />
 
                 <div id="markdown-container">
-                    <div id="filenav" className={"sidebars"}>
-                        <span>Topics:</span>
-                        {mdfiles}
-                    </div>
                     <div id="markdown" dangerouslySetInnerHTML={{__html: this.state.markdown}} />
                     <div id="toc" className={"sidebars"}>
                         <span>Table of Contents</span>

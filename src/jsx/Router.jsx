@@ -63,22 +63,19 @@ const Route = React.createClass({
     let path = location.pathname.split('/')[1];
     let host = location.hostname;
 
+    //case "blog": Component = <Home updateSnippetScripts={this.updateSnippetScripts}/>;
+    //break;
+    //case "posts": Component = <FullPost updateSnippetScripts={this.updateSnippetScripts}/>;
+    //break;
+    //case "portfolio": Component = <Portfolio />;
+    //break;
+
     switch(path) {
-      case "posts": Component = <FullPost updateSnippetScripts={this.updateSnippetScripts}/>;
-      break;
-      case "portfolio": Component = <Portfolio />;
-      break;
       case "chat": Component = <MsgBox />;
       break;
       case "games": Component = <Games baseAssetFolder={"unity"}/>
       break;
-      case "blog": Component = <Home updateSnippetScripts={this.updateSnippetScripts}/>;
-      break;
       default: Component = <Markdown />;
-    }
-
-    if(location.hostname.indexOf("welift") > -1) {
-        Component = <MsgBox />;
     }
 
     return (
