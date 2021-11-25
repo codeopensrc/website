@@ -111,7 +111,7 @@ const Header = React.createClass({
            <div id="latestActivity">
                 <h3>Latest Public Activity</h3>
                 {this.state.activity}
-               <h4><a href={"https://gitlab.codeopensrc.com/explore?sort=latest_activity_desc"} target="_blank">More</a></h4>
+               <h4><a href={"https://gitlab.codeopensrc.com/users/kc/activity"} target="_blank">More</a></h4>
             </div>
         </div>
 

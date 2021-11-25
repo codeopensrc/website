@@ -174,7 +174,12 @@ metadata:
     secretHash: $SECRET_YAML_HASH
     commitSha: $COMMIT_SHA
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: $APPNAME
@@ -191,6 +196,18 @@ spec:
         commitSha: $COMMIT_SHA
     spec:
       $IMAGE_PULL_SECRETS
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - $APPNAME
+              topologyKey: "kubernetes.io/hostname"
+            weight: 100
       containers:
       - name: $APPNAME
         image: $IMAGE:$TAG
