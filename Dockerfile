@@ -3,7 +3,7 @@ ARG BASE_IMAGE_TAG=3.14
 
 FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG} AS base
 WORKDIR /home/app
-ARG NODE_VER=14.17.6-r0
+ARG NODE_VER=14.18.1-r0
 RUN apk add --no-cache \
     nodejs=${NODE_VER} \
     curl \

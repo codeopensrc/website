@@ -3,7 +3,7 @@ x-buildargs:
     &default-buildargs
     BASE_IMAGE: alpine
     BASE_IMAGE_TAG: 3.14
-    NODE_VER: 14.17.6-r0
+    NODE_VER: 14.18.1-r0
     NPM_VER: 7.17.0-r0
     PM2_VER: 5.1.1
 volumes:
