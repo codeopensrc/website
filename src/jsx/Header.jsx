@@ -106,7 +106,12 @@ const Header = React.createClass({
                 <a href="https://gist.github.com/codeopensrc" target="_blank">
                     <img className={"gistIcon mysocialicons"} src={gistlogo} alt="Gist"/>
                 </a>
-
+                <div className={"dashboard"}>
+                    <a href={"https://gitlab.codeopensrc.com/-/grafana/dashboard/snapshot/k6hamID49jbce4VCFvXE1oWtWQxctITf?orgId=0"} target="_blank">
+                    Sample Dashboard
+                    <img src="/images/grafana.png" height="30" />
+                    </a>
+                </div>
             </div>
            <div id="latestActivity">
                 <h3>Latest Public Activity</h3>
