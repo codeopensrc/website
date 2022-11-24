@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "website.fullname" . }}
+  labels:
+    {{- include "website.labels" . | nindent 4 }}
+    {{- with .Values.ciLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.ciAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if eq .Values.service.type "None" }}
+  clusterIP: None
+  {{- else }}
+  type: {{ .Values.service.type }}
+  {{- end }}
+  ports:
+    {{- range .Values.service.ports }}
+    - port: {{ .servicePort }}
+      targetPort: {{ .targetContainerPortName }}
+      protocol: TCP
+      name: {{ .targetContainerPortName }}
+    {{- end }}
+  selector:
+    {{- include "website.selectorLabels" . | nindent 4 }}

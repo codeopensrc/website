@@ -1,9 +1,11 @@
 #!/bin/bash
 
+NAMESPACE="default"
+
 ## grep, echo, sed, tee, awk, git, sha256sum, kubectl  all req in image/os
 ## all available in alpine/busybox (minus kubectl)
 
-while getopts "a:c:h:i:n:r:t:ds" flag; do
+while getopts "a:c:h:i:n:r:t:p:ds" flag; do
     # These become set during 'getopts'  --- $OPTIND $OPTARG
     case "$flag" in
         a) OPT_APPNAME=${OPTARG};;
@@ -13,6 +15,7 @@ while getopts "a:c:h:i:n:r:t:ds" flag; do
         n) NAMESPACE=${OPTARG};;
         r) OPT_REGISTRY=${OPTARG};;
         t) OPT_TAG=${OPTARG};;
+        p) PATCH_FILE=${OPTARG};;
         d) USE_DB="true";;
         s) USE_CI_REGISTRY_SECRET="true";;
     esac
@@ -106,6 +109,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: $APPNAME
+  namespace: $NAMESPACE
   labels:
     app: $APPNAME
 type: Opaque
@@ -123,6 +127,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: $APPNAME
+  namespace: $NAMESPACE
   labels:
     app: $APPNAME
 data:
@@ -243,7 +248,7 @@ echo "$OUTPUT"
 
 if [[ $OUTPUT =~ "deployment.apps/$APPNAME unchanged" ]]; then
     echo "======= Deployment was unchanged, forcing update via rollout. ======="
-    kubectl rollout restart deploy/$APPNAME
+    kubectl rollout restart -n $NAMESPACE deploy/$APPNAME
 fi
 
 ### TODO: Persistant volumes
@@ -260,6 +265,7 @@ if [[ -n $USE_DB && $NAMESPACE != "production" ]]; then
 	kind: ConfigMap
 	metadata:
 	  name: $APPNAME
+	  namespace: $NAMESPACE
 	  labels:
 	    app: $APPNAME
 	data:
@@ -318,4 +324,13 @@ if [[ -n $USE_DB && $NAMESPACE != "production" ]]; then
 	        - configMapRef:
 	            name: $APPNAME
 	EOF
+fi
+
+if [[ -n $PATCH_FILE ]]; then
+    echo "Waiting on deployment before applying patch"
+    kubectl rollout status -w "deployment/${APPNAME}" -n $NAMESPACE
+    echo "Waiting 10.."
+    sleep 10;
+    echo "Applying patch at $PATCH_FILE"
+    kubectl patch deployment ${APPNAME} --patch "$(cat $PATCH_FILE)" -n $NAMESPACE
 fi

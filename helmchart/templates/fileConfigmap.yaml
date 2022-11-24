@@ -1,0 +1,15 @@
+{{- range .Values.createFileConfigMaps }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "website.labels" $ | nindent 4 }}
+    {{- with $.Values.ciLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  {{ .name }}: |
+    {{- toYaml .content | nindent 4}}
+---
+{{- end }}

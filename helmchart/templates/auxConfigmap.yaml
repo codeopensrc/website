@@ -1,0 +1,16 @@
+{{- range .Values.createAndAttachExtraConfigMaps }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "website.labels" $ | nindent 4 }}
+    {{- with $.Values.ciLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  {{- range $k, $v := .data }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+---
+{{- end }}
