@@ -13,4 +13,4 @@ version: 0.1.0
 # It is recommended to use it with quotes.
 ###! Follows the version in docker-compose.yml
 ###! Updated in CI and should not need manual updates
-appVersion: "0.6.2-93c65f2"
+appVersion: "0.6.2-4c43122"

@@ -41,7 +41,7 @@ services:
     ###############################################################
     ###############################################################
     main:
-        image: registry.codeopensrc.com/kc/website/app:0.6.2-93c65f2
+        image: registry.codeopensrc.com/kc/website/app:0.6.2-4c43122
         ports: ["5100:80"]
         labels: ["com.codeopensrc.consul=website"]
         build:
