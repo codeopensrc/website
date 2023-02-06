@@ -3,10 +3,10 @@ name: website
 description: Helm chart for website
 type: application
 ###! Should be updated on appVersion update or dependency chart updates
-version: 0.1.0
+version: 0.2.0
 ###! Follows the version in docker-compose.yml
 ###! Updated in CI and should not need manual updates
-appVersion: "0.6.2-4c43122"
+appVersion: "0.7.0"
 ## Cannot share data between dependency charts using 'import-values'
 ## Data imported only available to manifests in this charts templates/ folder
 dependencies:
