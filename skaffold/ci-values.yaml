@@ -1,0 +1,33 @@
+## skaffold helm deploy requires the image key
+app:
+  enabled: true
+  image:
+    pullPolicy: Always
+  replicaCount: 1
+db:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: mongo
+    pullPolicy: IfNotPresent
+    tag: 4.4.6
+  #command: ["mongod", "-f", "/etc/mongo/mongod.conf"]
+  service:
+    ports:
+      - servicePort: 27017
+        targetContainerPortName: mongo
+  ingress:
+    enabled: false
+  containerPorts:
+    - name: mongo
+      port: 27017
+  containerProbe:
+    enabled: false
+  useStatefulSet: true
+  persistence:
+    statefulset:
+      persistentVolumeClaimRetentionPolicy:
+        whenDeleted: Delete
+  volumeClaimMounts:
+    - mountPath: /data/db
+      subPath: db

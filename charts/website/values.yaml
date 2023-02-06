@@ -1,0 +1,18 @@
+app:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: registry.codeopensrc.com/kc/website/app
+  secretStringData:
+    MONGO_DB_NAME: "mongo"
+    BLOG_KEY: "secret_value"
+  configMapData:
+    CONSUL_SERVICE_NAME:  "website"
+    CONSUL_HOST:          "172.17.0.1"
+    REGISTER_SERVICE:     "false"
+    AUTH_URL:             ""
+    DEV_DATABASE_URL_ORIGIN: "mongodb://website-db:27017"
+    GITLAB_API_URL:       ""
+    ENABLE_DB:           "false"
+db:
+  enabled: false

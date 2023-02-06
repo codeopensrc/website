@@ -1,17 +1,15 @@
 version: "3.5"
 x-buildargs:
     &default-buildargs
-    BASE_IMAGE: alpine
-    BASE_IMAGE_TAG: 3.14
-    NODE_VER: 14.18.1-r0
-    NPM_VER: 7.17.0-r0
-    PM2_VER: 5.1.1
+    BUILD_BASE: base
 volumes:
     temp_data:
 services:
     dev:
         image: website/app:dev
-        ports: ["5105:80"]
+        ports:
+            - "5105:80"    # Vanilla watch `npm run watch`
+            - "5155:5155"  # Hot reloading server `npm run reloader`
         build:
             context: .
             target: src
@@ -24,11 +22,16 @@ services:
         env_file:
             - "${COMPOSE_ENV_FILE:-.env.tmpl}"
         environment:
-            DEV_DATABASE_URL: "mongodb://mongodb:27017/${MONGO_DB_NAME:-mongo}"
+            DEV_DATABASE_URL_ORIGIN: "mongodb://mongodb:27017"
             LOG_EVERY_NUM_CHECKS: 5
-            DEV_ENV:          "true"
+            DEV_ENV: "true"
+            ENABLE_DB: "false"
+            LIVE_RELOADER_PORT: 5055
+        ###! Uncomment to bring up the mongodb service
+        ###! Also set ENABLE_DB to "true" - See server/routes.js to adjust behavior
         #depends_on:
         #    - mongodb
+ 
     #### Dev DB service ===
     mongodb:
         image: mongo:4.4.6
@@ -54,8 +57,7 @@ services:
             CONSUL_SERVICE_NAME:    "website"
             REGISTER_SERVICE:       "true"
             AUTH_URL:               "${AUTH_URL}"
-        ## Docker Swarm - https://docs.docker.com/compose/compose-file/compose-file-v3/#deploy
-        ## deploy:
+            ENABLE_DB:              "false"
 ###############################################################
 ###############################################################
     #### WIP =======

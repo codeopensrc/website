@@ -6,9 +6,13 @@ dumps
 .env
 *.swp
 *.vim
+*.tgz
 
 npm-debug.log
 .DS_Store
 
 *bundle.js
 pub/index.html
+
+# Allow env yaml files
+env*.yaml

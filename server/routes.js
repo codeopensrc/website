@@ -3,21 +3,21 @@
 const url = require("url");
 const fs = require("fs");
 const https = require("https");
-const { service } = require("os-npm-util");
-const mongojs = require("./mongo.js");
+const db = require("./mongo.js");
 const mongoose = require('mongoose')
 const ObjectID = mongoose.Types.ObjectId
 const auth = require("./auth.js");
 
 const KEY = process.env.BLOG_KEY || "dev";
 const STATIC_FILES = process.env.STATIC_FILES || "./server/static";
-const TOKEN_API_SELF_READ = process.env.TOKEN_API_SELF_READ || "";
 const GITLAB_API_URL = process.env.GITLAB_API_URL || "";
+
+// Toggle initializing DB
+const enableDB = process.env.ENABLE_DB == "true"
+db.init(enableDB)
 
 let gameList = [];
 generateGameList((list) => gameList = list)
-
-//mongojs.mongoinit();
 
 
 const routes = function (req, res) {
@@ -36,12 +36,14 @@ const routes = function (req, res) {
 
     req.on('end', () => {
         let parsed = input ? JSON.parse(input) : "";
+
+        let requrl = url.parse(req.url).pathname
         let headers = req.headers;
 
         let path = req.url.split("/")
         let fileName = path[path.length-1]
 
-        switch(req.url) {
+        switch(requrl) {
             // TODO: Review ping/pong
             case "/api/get/ping": respond("pong");
             break;
@@ -65,25 +67,25 @@ const routes = function (req, res) {
             case `/api/get/docker_badge`: sendBadgeJson(headers, "docker", respond);
             break;
 
-            //case "/ajaxGet": mongojs.retrieve("posts", headers, res)
+            //case "/ajaxGet": db.retrieve("posts", headers, res)
             //break;
-            //case "/ajaxGetTodo": mongojs.retrieve("todo_list", headers, res)
+            //case "/ajaxGetTodo": db.retrieve("todo_list", headers, res)
             //break;
-            //case "/ajaxGetSingle": mongojs.retrieveOne({_id: ObjectID(parsed.id)}, "posts", headers, res)
+            //case "/ajaxGetSingle": db.retrieveOne({_id: ObjectID(parsed.id)}, "posts", headers, res)
             //break;
-            //case "/ajaxGetFullPost": mongojs.retrieveOne({url: parsed.url}, "posts", headers, res)
-            //break;
-
-            //case "/ajaxRemoveTodoItem": mongojs.remove(parsed, "todo_list", headers, res)
-            //break;
-            //case "/ajaxDelete": mongojs.remove(parsed, "posts", headers, res)
+            //case "/ajaxGetFullPost": db.retrieveOne({url: parsed.url}, "posts", headers, res)
             //break;
 
-            //case "/ajaxEdit": mongojs.submit(parsed, "posts", headers, res)
+            //case "/ajaxRemoveTodoItem": db.remove(parsed, "todo_list", headers, res)
             //break;
-            //case "/ajaxNew": mongojs.submit(parsed, "posts", headers, res)
+            //case "/ajaxDelete": db.remove(parsed, "posts", headers, res)
             //break;
-            //case "/ajaxSubmitTodoItem": mongojs.submit(parsed, "todo_list", headers, res)
+
+            //case "/ajaxEdit": db.submit(parsed, "posts", headers, res)
+            //break;
+            //case "/ajaxNew": db.submit(parsed, "posts", headers, res)
+            //break;
+            //case "/ajaxSubmitTodoItem": db.submit(parsed, "todo_list", headers, res)
             //break;
 
             //case "/ajaxAuth": respond({storageKey:parsed.storageKey===KEY?"accepted":"denied"})
@@ -98,22 +100,21 @@ const routes = function (req, res) {
 }
 
 function sendBadgeJson(headers, badgeType, respond) {
-    if(!TOKEN_API_SELF_READ) { return respond() }
     if(!GITLAB_API_URL) { return respond() }
     let badgetypes = {
         build: {
             label: "Build",
-            apiReq: `${GITLAB_API_URL}/projects/161/pipelines?ref=master&scope=finished&private_token=${TOKEN_API_SELF_READ}`,
+            apiReq: `${GITLAB_API_URL}/projects/161/pipelines?ref=master&scope=finished`,
             color: "brightgreen",
         },
         version: {
             label: "Version",
-            apiReq: `${GITLAB_API_URL}/projects/161/repository/tags?private_token=${TOKEN_API_SELF_READ}`,
+            apiReq: `${GITLAB_API_URL}/projects/161/repository/tags`,
             color: "blue",
         },
         docker: {
             label: "Docker",
-            apiReq: `${GITLAB_API_URL}/projects/161/registry/repositories/11/tags/latest?private_token=${TOKEN_API_SELF_READ}`,
+            apiReq: `${GITLAB_API_URL}/projects/161/registry/repositories/11/tags/latest`,
             color: "blue",
         }
     }
@@ -254,6 +255,5 @@ function generateGameList(cb) {
         })
     })
 }
-
 
 module.exports = routes;
