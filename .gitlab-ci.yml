@@ -196,7 +196,7 @@ default:
 ## Thinking skaffold for review/deployment/integration of multiple apps 
 ##  and helm or argo for build/deploying the beta/prod version of the singular app
 .skaffold_deploy: &skaffold_deploy
-  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" charts/*/Chart.yaml'
+  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" charts/website/Chart.yaml'
   - skaffold config set --global collect-metrics false
   - *add_helm_repos
   - skaffold deploy -p ci --build-artifacts=tags.json ${SKAFFOLD_CLI_OPTS}
@@ -204,7 +204,7 @@ default:
   - kubectl get all -n $KUBE_NAMESPACE -l "app.kubernetes.io/instance=${APPNAME}"
 
 .deploy_helm_chart: &deploy_helm_chart
-  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" charts/*/Chart.yaml'
+  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" charts/website/Chart.yaml'
   - *add_helm_repos
   - helm dependency build charts/website
   - helm upgrade $APPNAME charts/website --install -f skaffold/ci-values.yaml -f helm_ci_values.yaml -n $KUBE_NAMESPACE --wait
@@ -498,10 +498,10 @@ commit_stable:
   - echo $COMMIT_SHA
   - *exit_if_sha_matches_stable
   - sed -i "s|${CURVER}-*.*|${CURVER}-${COMMIT_SHA}|" docker-compose.yml
-  - 'sed -i "s|version: ${CURCHART}|version: ${CHART_VERSION}|" charts/*/Chart.yaml'
-  - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${CURVER}-${COMMIT_SHA}\"|" charts/*/Chart.yaml'
+  - 'sed -i "s|version: ${CURCHART}|version: ${CHART_VERSION}|" charts/website/Chart.yaml'
+  - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${CURVER}-${COMMIT_SHA}\"|" charts/website/Chart.yaml'
   - helm dependency update charts/website
-  - git add docker-compose.yml charts/*/Chart.yaml charts/website/Chart.lock
+  - git add docker-compose.yml charts/website/Chart.yaml charts/website/Chart.lock
   ## publish important after 'git add' as publish updates Chart.lock to use remote helm repo
   ##  which we dont want in vcs but do want when packaging it up for external use
   - *publish_helm_charts
@@ -565,7 +565,7 @@ commit_version:
   - 'sed -i "s|^version: ${CURCHART}|version: ${CHART_VERSION}|" charts/website/Chart.yaml'
   - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${VERSION}\"|" charts/website/Chart.yaml'
   - helm dependency update charts/website
-  - git add docker-compose.yml charts/*/Chart.yaml charts/website/Chart.lock
+  - git add docker-compose.yml charts/website/Chart.yaml charts/website/Chart.lock
   - *publish_helm_charts
   - git config --global user.name "${GITLAB_USER_NAME}"
   - git config --global user.email "${GITLAB_USER_EMAIL}"
@@ -622,7 +622,8 @@ deploy_production:
   script:
   - echo "$KUBE_NAMESPACE"
   - APPNAME=${SERVICE_NAME}
-  - HELM_IMAGE_TAG=""
+  ## Need HELM_IMAGE_TAG for 'image.tag' otherwise it falls back to 'tpl' chart's appVersion
+  - HELM_IMAGE_TAG=$(grep ^appVersion ./charts/website/Chart.yaml | awk '{print $2}' | tr -d '"')
   - 'URL=https://${SUBDOMAIN}.${SERVER_DOMAIN}'
   - echo "URL=${URL}" > deploy.env
   - 'echo "APPNAME: ${APPNAME}"'

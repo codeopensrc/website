@@ -1,6 +1,6 @@
 app:
   enabled: true
-  replicaCount: 2
+  replicaCount: 1
   image:
     repository: registry.codeopensrc.com/kc/website/app
   secretStringData:

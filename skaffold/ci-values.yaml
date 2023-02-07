@@ -3,7 +3,7 @@ app:
   enabled: true
   image:
     pullPolicy: Always
-  replicaCount: 1
+  replicaCount: 2
 db:
   enabled: true
   replicaCount: 1
