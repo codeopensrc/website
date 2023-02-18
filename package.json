@@ -5,7 +5,6 @@
         "mongoose": "^6.0.0",
         "ws": "^5.0.0",
         "redis": "2.7.1",
-        "consul": "^0.29.0",
         "os-npm-util": "https://github.com/codeopensrc/os-npm-util/tarball/master#0.8.1"
     },
     "resolutions": {

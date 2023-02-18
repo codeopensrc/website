@@ -3,6 +3,7 @@ app:
   enabled: true
   image:
     pullPolicy: Always
+    tag: "skaffold-dev"
   replicaCount: 1
   service:
     ports:
@@ -56,7 +57,16 @@ db:
     - name: mongo
       port: 27017
   containerProbe:
-    enabled: false
+    enabled: true
+    type: tcp
+    port: mongo
+    probes:
+      livenessProbe:
+        failureThreshold: 5
+        periodSeconds: 15
+      readinessProbe:
+        failureThreshold: 2
+        periodSeconds: 15
   useStatefulSet: true
   persistence:
     statefulset:

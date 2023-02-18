@@ -2,7 +2,10 @@ apiVersion: v2
 name: website
 description: Helm chart for website
 type: application
-###! Should be updated on appVersion update or dependency chart updates
+###! Manually update when ONLY updating chart/subcharts/chart dependencies
+###! Otherwise it is updated in ci when appVersion gets an update
+###! We _shouldnt_ "release" (triggering version updates) for only chart updates
+###! TODO: Somehow add safeguard to not update chart version in ci if manually updated
 version: 0.2.1
 ###! Follows the version in docker-compose.yml
 ###! Updated in CI and should not need manual updates
@@ -11,12 +14,12 @@ appVersion: "0.7.0-a6500cb"
 ## Data imported only available to manifests in this charts templates/ folder
 dependencies:
 - name: tpl
-  version: 0.6.3
+  version: 0.7.2
   alias: app
   condition: app.enabled
   repository: https://gitlab.codeopensrc.com/api/v4/projects/36/packages/helm/stable
 - name: tpl
-  version: 0.6.3
+  version: 0.7.2
   alias: db
   condition: db.enabled
   repository: https://gitlab.codeopensrc.com/api/v4/projects/36/packages/helm/stable

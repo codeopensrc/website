@@ -4,6 +4,7 @@ app:
   enabled: true
   image:
     pullPolicy: IfNotPresent
+    tag: "skaffold-dev"
   replicaCount: 1
   service:
     ports:
@@ -58,7 +59,16 @@ db:
     - name: mongo
       port: 27017
   containerProbe:
-    enabled: false
+    enabled: true
+    type: tcp
+    port: mongo
+    probes:
+      livenessProbe:
+        failureThreshold: 5
+        periodSeconds: 15
+      readinessProbe:
+        failureThreshold: 2
+        periodSeconds: 15
   useStatefulSet: true
   statefulSetPodManagementPolicy: "Parallel"
   job:
@@ -66,28 +76,27 @@ db:
     image:
       repository: mongo
       pullPolicy: Always
-      tag: "4.4.6"
+      tag: 4.4.6
     backoffLimit: 3
     ttlSecondsAfterFinished: 60
     restartPolicy: Never
-    #### TODO: Check exit code and exit properly
-    #{"ok" : 0,
-    #"errmsg" : "replSetInitiate quorum check failed because not all proposed set members responded affirmatively: website-db-2.website-db:27017 failed with Error connecting to website-db-2.website-d
-    #    "code" : 74,
-    #   "codeName" : "NodeNotFound" 
-    #}  
     command:
     - bash
     - -c
     - |
       echo "Wait 15 for dbs to initialize"
       sleep 15;
-      mongo --host "website-db-0.website-db" --eval \
+      INIT=$(mongo --host "website-db-0.website-db" --eval \
         "rs.initiate( { _id : 'rs0', members: [
             { _id: 0, host: 'website-db-0.website-db:27017' },
             { _id: 1, host: 'website-db-1.website-db:27017' },
             { _id: 2, host: 'website-db-2.website-db:27017' }
-        ]})";
+        ]})");
+      echo "init is: $INIT";
+      CODE=$(echo "$INIT" | sed -nr 's/.*ok" : ([0-9]).*/\1/p');
+      echo "mongo ok is: $CODE";
+      if [ ! -z "$CODE" ] && [ "$CODE" = "1" ]; then exit 0; fi;
+      exit 1;
   persistence:
     statefulset:
       persistentVolumeClaimRetentionPolicy:

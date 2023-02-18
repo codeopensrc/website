@@ -1,4 +1,4 @@
-ARG NODE_VER=18.12.1-r0
+ARG NODE_VER=18.14.1-r0
 ARG BUILD_BASE=base
 ARG BASE_IMAGE=alpine
 ARG BASE_IMAGE_TAG=3.17
@@ -34,7 +34,6 @@ RUN mkdir -p /home/app/pub \
     && cp src/html/* /home/app/pub/ \
     && npm run release
 COPY server /home/app/server
-COPY docker-compose.yml /home/app/docker-compose.yml
 ENTRYPOINT ["pm2-dev", "server/pm2.config.js"]
 EXPOSE 80 443
 CMD [""]
@@ -52,7 +51,6 @@ COPY --from=src /home/app/package-lock.json /home/app/package-lock.json
 COPY --from=src /home/app/server /home/app/server
 COPY --from=src /home/app/pub /home/app/pub
 COPY --from=src /home/app/src/html/ /home/app/pub/
-COPY --from=src /home/app/docker-compose.yml /home/app/docker-compose.yml
 ENTRYPOINT ["pm2-runtime", "server/pm2.config.js"]
 EXPOSE 80 443
 CMD [""]

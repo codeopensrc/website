@@ -3,6 +3,7 @@ stages:
   - build
   - deploy
   - stop
+  - publish
   - commit
   - release
   - deploy_prod
@@ -17,6 +18,7 @@ variables:
   TOKEN_REGISTRY_SELF_READ: "secret_value"
   TOKEN_API_SNIPPET_WRITE: "secret_value"
   SERVICE_NAME: ${CI_PROJECT_NAME}
+  APP_CHART_DIR: charts/website
   SUBDOMAIN: www
   AUTH_URL: ""
   MONGO_DB_NAME: citmp
@@ -35,6 +37,14 @@ variables:
   BLOG_KEY: "secret_value"
   DEFAULT_GAME_BRANCH_REF: "master"
   GAME1_BRANCH_REF: "dev"
+  RELEASE:
+    description: "Optionally define a release when running against master branch - options 'stable, patch, minor, major'"
+  ONLY_DEPLOY_PROD:
+    description: "Optionally skip build steps and only run 'deploy_production' job - Only option 'true'"
+  ONLY_PUBLISH_CHART:
+    description: "Only run after manually updating Chart.yaml and Chart.lock files. Optionally skip build steps and only run 'publish_charts' job - Only option 'true'"
+  STOP_PROD:
+    description: "USE WITH CAUTION - Used to stop production environment - Only option 'true'"
 
 default:
   before_script:
@@ -67,7 +77,7 @@ default:
   '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master" && $RELEASE == "stable"'
 
 .is_web_master_release: &is_web_master_release
-  '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master" && ($RELEASE != null && $RELEASE != "stable")'
+  '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_REF_NAME == "master" && ($RELEASE != "" && $RELEASE != "stable")'
 
 .trigger_deploy_prod_job: &trigger_deploy_prod_job
   ## Keeping SKIP_BETA var to showcase passing vars to pipelines
@@ -127,7 +137,7 @@ default:
   - "[[ $RELEASE == 'patch' ]] && VERSION=${MAJOR}.${MINOR}.${NEXT_PATCH}"
 
 .create_next_chart_version: &create_next_chart_version
-  - PROD_CHART=$(awk "/version:/{print; exit;}" charts/website/Chart.yaml)
+  - PROD_CHART=$(awk "/version:/{print; exit;}" ${APP_CHART_DIR}/Chart.yaml)
   - CURCHART=$(echo $PROD_CHART | cut -d ":" -f2 | cut -d "-" -f1 | sed "s/^ *//")
   - MAJOR_CHART=$(echo $CURCHART | cut -d "." -f 1)
   - MINOR_CHART=$(echo $CURCHART | cut -d "." -f 2)
@@ -151,8 +161,8 @@ default:
 
 .create_helm_values: &create_helm_values
   - |
-    REGISTER_SERVICE="false"
-    [[ $KUBE_NAMESPACE = "production" ]] && REGISTER_SERVICE="true"
+    ENABLE_CONSUL=false
+    [[ $KUBE_NAMESPACE = "production" ]] && ENABLE_CONSUL=true
     cat <<EOF > helm_ci_values.yaml
     app:
       imagePullSecrets:
@@ -160,6 +170,11 @@ default:
       image:
         repository: "${PROJECT_APP_IMAGE}"
         tag: "${HELM_IMAGE_TAG}"
+      svcDiscovery:
+        consul:
+          enabled: $ENABLE_CONSUL
+          env:
+            CONSUL_HOST: consul.${SERVER_DOMAIN}
       ciLabels:
         app: "${APPNAME}"
         env: "${CI_ENVIRONMENT_SLUG}"
@@ -170,10 +185,9 @@ default:
         MONGO_DB_NAME: "${MONGO_DB_NAME}"
         BLOG_KEY: "${BLOG_KEY}"
       configMapData:
-        REGISTER_SERVICE:     "${REGISTER_SERVICE}"
         ENABLE_DB:            "${ENABLE_DB}"
-        AUTH_URL:             "${AUTH_URL}"
         DEV_DATABASE_URL_ORIGIN: "mongodb://${APPNAME}-db:27017"
+        AUTH_URL:             "${AUTH_URL}"
         GITLAB_API_URL:       "${GITLAB_API_URL}"
     db:
       enabled: $ENABLE_DB
@@ -187,16 +201,17 @@ default:
         MONGO_INITDB_DATABASE: "${MONGO_DB_NAME}"
     EOF
 
-#'helm repo add' necessary in helm v4 - https://github.com/helm/helm/issues/8036
+###! 'helm repo add' necessary in helm v4 for 'repository: https' dependency charts
+###! https://github.com/helm/helm/issues/8036
 .add_helm_repos: &add_helm_repos
-  - CHART_NAMES=( $(grep name ./charts/website/Chart.lock | awk '{print $3}') )
-  - CHART_URLS=( $(grep repository ./charts/website/Chart.lock | awk '{print $2}') )
+  - CHART_NAMES=( $(grep name ./${APP_CHART_DIR}/Chart.lock | awk '{print $3}') )
+  - CHART_URLS=( $(grep repository ./${APP_CHART_DIR}/Chart.lock | awk '{print $2}') )
   - for ind in "${!CHART_NAMES[@]}"; do helm repo add "${CHART_NAMES[$ind]}" "${CHART_URLS[$ind]}"; done
 
 ## Thinking skaffold for review/deployment/integration of multiple apps 
 ##  and helm or argo for build/deploying the beta/prod version of the singular app
 .skaffold_deploy: &skaffold_deploy
-  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" charts/website/Chart.yaml'
+  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" ${APP_CHART_DIR}/Chart.yaml'
   - skaffold config set --global collect-metrics false
   - *add_helm_repos
   - skaffold deploy -p ci --build-artifacts=tags.json ${SKAFFOLD_CLI_OPTS}
@@ -204,10 +219,10 @@ default:
   - kubectl get all -n $KUBE_NAMESPACE -l "app.kubernetes.io/instance=${APPNAME}"
 
 .deploy_helm_chart: &deploy_helm_chart
-  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" charts/website/Chart.yaml'
+  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" ${APP_CHART_DIR}/Chart.yaml'
   - *add_helm_repos
-  - helm dependency build charts/website
-  - helm upgrade $APPNAME charts/website --install -f skaffold/ci-values.yaml -f helm_ci_values.yaml -n $KUBE_NAMESPACE --wait
+  - helm dependency build ${APP_CHART_DIR}
+  - helm upgrade $APPNAME ${APP_CHART_DIR} --install -f skaffold/ci-values.yaml -f helm_ci_values.yaml -n $KUBE_NAMESPACE --wait
   - helm history $APPNAME -n $KUBE_NAMESPACE
   - kubectl get all -n $KUBE_NAMESPACE -l "app.kubernetes.io/instance=${APPNAME}"
   ## rollout status multiple resource support in 1.25 https://github.com/kubernetes/kubernetes/pull/108777
@@ -218,20 +233,24 @@ default:
   - kubectl rollout status deploy/${APPNAME}-app -n $KUBE_NAMESPACE -w
 
 .publish_helm_charts: &publish_helm_charts
-  - helm package -u charts/website
-  - curl -sS -X POST -F "chart=@website-${CHART_VERSION}.tgz"
+  - 'sed -i "s| repository: file| #repository: file|" ${APP_CHART_DIR}/Chart.yaml'
+  - 'sed -i "s| #repository: https| repository: https|" ${APP_CHART_DIR}/Chart.yaml'
+  - helm package -u ${APP_CHART_DIR}
+  - curl -sS -X POST -F "chart=@${APP_CHART_DIR#charts/}-${CHART_VERSION}.tgz"
     --user gitlab-ci-token:$CI_JOB_TOKEN
     ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/stable/charts
   ## To use
   #helm repo add os ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/stable
   #helm upgrade --install my-helm-release os/website
 
+### TODO: Do this in the Dockerfile and use --build-args if possible
 .add_md: &add_md
   - 'ARTIFACTS_URL="$CI_SERVER_URL/api/v4/projects/100/jobs/artifacts/master/download?job=bundle"'
   - 'curl -JO --header "PRIVATE-TOKEN: $TOKEN_API_PROJECT_NOTES" "$ARTIFACTS_URL"'
   - unzip -o artifacts.zip -d ./server/static/md/
   - rm -rf artifacts.zip
 
+### TODO: Do this in the Dockerfile and use --build-args if possible
 .add_game: &add_game
   - 'ARTIFACTS_URL="$CI_SERVER_URL/api/v4/projects/$PROJECT_ID/jobs/artifacts/$BRANCH_REF/download?job=build_webgl"'
   - 'curl -JO --header "PRIVATE-TOKEN: $TOKEN_API_GROUP_GAMES" "$ARTIFACTS_URL"'
@@ -282,7 +301,7 @@ workflow:
   rules:
   - if: $CI_COMMIT_TAG
     when: never
-  - if: '$ONLY_DEPLOY_PROD == "true" || $STOP_PROD == "true"'
+  - if: '$ONLY_DEPLOY_PROD == "true" || $STOP_PROD == "true" || $ONLY_PUBLISH_CHART == "true"'
     variables:
       SKIP_WEB_DEFAULT_RUN: "true"
   - when: always
@@ -326,9 +345,12 @@ echo_env_vars:
   - echo $CI_PROJECT_ID
   - echo $CI_KUBERNETES_ACTIVE
   - echo $CI_CONFIG_PATH
+  - echo $RELEASE
+  - echo $ONLY_DEPLOY_PROD
+  - echo $STOP_PROD
+  - echo $ONLY_PUBLISH_CHART
   rules:
   - if: $CI_PIPELINE_SOURCE != "merge_request_event"
-
 
 ########################
 #### FEATURE BRANCH
@@ -425,7 +447,7 @@ build_beta:
   - "OUTPUT_IMGS=${PROJECT_APP_IMAGE}:${BETA}"
   - *build_image
   rules:
-  - if: '$SKIP_WEB_DEFAULT_RUN == "true" || $RELEASE != null'
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true" || $RELEASE != ""'
     when: never
   - if: ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_REF_NAME == "master"
 
@@ -457,7 +479,7 @@ deploy_beta:
     on_stop: stop_beta
     auto_stop_in: 1 hour
   rules:
-  - if: '$SKIP_WEB_DEFAULT_RUN == "true" || $RELEASE != null'
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true" || $RELEASE != ""'
     when: never
   - if: ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_REF_NAME == "master"
 
@@ -477,11 +499,21 @@ stop_beta:
     name: beta
     action: stop
   rules:
-  - if: '$SKIP_WEB_DEFAULT_RUN == "true" || $RELEASE != null'
+  - if: '$SKIP_WEB_DEFAULT_RUN == "true" || $RELEASE != ""'
     when: never
   - if: ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "web") && $CI_COMMIT_REF_NAME == "master"
     when: manual
 
+publish_charts:
+  stage: publish
+  tags:
+  - kubernetes_prod
+  script:
+  - *create_next_chart_version
+  - CHART_VERSION=${CURCHART}
+  - *publish_helm_charts
+  rules:
+  - if: $ONLY_PUBLISH_CHART == "true" && $CI_COMMIT_REF_NAME == "master"
 
 ###############################
 ###   Dont Tag Commit -  $RELEASE is [stable]
@@ -498,12 +530,10 @@ commit_stable:
   - echo $COMMIT_SHA
   - *exit_if_sha_matches_stable
   - sed -i "s|${CURVER}-*.*|${CURVER}-${COMMIT_SHA}|" docker-compose.yml
-  - 'sed -i "s|version: ${CURCHART}|version: ${CHART_VERSION}|" charts/website/Chart.yaml'
-  - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${CURVER}-${COMMIT_SHA}\"|" charts/website/Chart.yaml'
-  - helm dependency update charts/website
-  - git add docker-compose.yml charts/website/Chart.yaml charts/website/Chart.lock
-  ## publish important after 'git add' as publish updates Chart.lock to use remote helm repo
-  ##  which we dont want in vcs but do want when packaging it up for external use
+  - 'sed -i "s|^version: ${CURCHART}|version: ${CHART_VERSION}|" ${APP_CHART_DIR}/Chart.yaml'
+  - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${CURVER}-${COMMIT_SHA}\"|" ${APP_CHART_DIR}/Chart.yaml'
+  - helm dependency update ${APP_CHART_DIR}
+  - git add docker-compose.yml ${APP_CHART_DIR}/Chart.yaml ${APP_CHART_DIR}/Chart.lock
   - *publish_helm_charts
   - git config --global user.name "${GITLAB_USER_NAME}"
   - git config --global user.email "${GITLAB_USER_EMAIL}"
@@ -562,10 +592,10 @@ commit_version:
   - bash genlog.sh $RELEASE -s $CI_SERVER_URL -p $CI_PROJECT_PATH -t $CURVER -v -m mreq.json -n $NOTES
   - git add CHANGELOG.md 2>/dev/null || echo 0
   - sed -i "s|${CURVER}-*.*|${VERSION}|" docker-compose.yml
-  - 'sed -i "s|^version: ${CURCHART}|version: ${CHART_VERSION}|" charts/website/Chart.yaml'
-  - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${VERSION}\"|" charts/website/Chart.yaml'
-  - helm dependency update charts/website
-  - git add docker-compose.yml charts/website/Chart.yaml charts/website/Chart.lock
+  - 'sed -i "s|^version: ${CURCHART}|version: ${CHART_VERSION}|" ${APP_CHART_DIR}/Chart.yaml'
+  - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${VERSION}\"|" ${APP_CHART_DIR}/Chart.yaml'
+  - helm dependency update ${APP_CHART_DIR}
+  - git add docker-compose.yml ${APP_CHART_DIR}/Chart.yaml ${APP_CHART_DIR}/Chart.lock
   - *publish_helm_charts
   - git config --global user.name "${GITLAB_USER_NAME}"
   - git config --global user.email "${GITLAB_USER_EMAIL}"
@@ -623,7 +653,7 @@ deploy_production:
   - echo "$KUBE_NAMESPACE"
   - APPNAME=${SERVICE_NAME}
   ## Need HELM_IMAGE_TAG for 'image.tag' otherwise it falls back to 'tpl' chart's appVersion
-  - HELM_IMAGE_TAG=$(grep ^appVersion ./charts/website/Chart.yaml | awk '{print $2}' | tr -d '"')
+  - HELM_IMAGE_TAG=$(grep ^appVersion ./${APP_CHART_DIR}/Chart.yaml | awk '{print $2}' | tr -d '"')
   - 'URL=https://${SUBDOMAIN}.${SERVER_DOMAIN}'
   - echo "URL=${URL}" > deploy.env
   - 'echo "APPNAME: ${APPNAME}"'

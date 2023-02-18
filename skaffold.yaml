@@ -10,14 +10,13 @@
     dest: /home/app
   - src: "server/**"
     dest: /home/app
-  - src: "docker-compose.yml"
-    dest: /home/app
 
 .custom_build_deps: &custom_build_deps
   paths:
   - src/**
   - server/**
   - Dockerfile
+  - package.json
   ignore:
   - "**/*.swp"
 

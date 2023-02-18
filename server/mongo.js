@@ -1,13 +1,11 @@
 "use strict";
 
-const CONSUL_HOST = process.env.CONSUL_HOST || "172.17.0.1";
-
-const consul = require('consul')({host: CONSUL_HOST});
-const serverState = require("./serverState.js");
-const auth = require("./auth.js");
 const mongoose = require('mongoose')
-const ObjectID = mongoose.Types.ObjectId
+const serverState = require("./serverState.js");
+const consul = require("./consul.js");
+const auth = require("./auth.js");
 
+const ObjectID = mongoose.Types.ObjectId
 const CONSUL_RETRY_INTERVAL = 1000 * 2
 const DB_RETRY_INTERVAL = 1000 * 2
 
@@ -35,7 +33,7 @@ module.exports = {
 
         // If we're not providing a URL look for address in consul
         if(!FULL_DEV_DB_URL) {
-            consul.catalog.service.nodes("mongo", (err, res) => {
+            consul.getServiceNodes("mongo", (err, res) => {
                 if (err) { console.log("ERR - db.js", err); }
                 let addrStr = "";
                 res && res.length > 0 && res.forEach((node, i) => {

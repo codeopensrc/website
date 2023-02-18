@@ -4,7 +4,14 @@ app:
   enabled: true
   image:
     pullPolicy: IfNotPresent
+    tag: "skaffold-dev"
   replicaCount: 1
+  svcDiscovery:
+    consul:
+      enabled: false
+      env:
+        CONSUL_HOST: "192.168.49.1"
+        CONSUL_PORT: "8500"
   service:
     ports:
       - servicePort: 80
@@ -57,7 +64,16 @@ db:
     - name: mongo
       port: 27017
   containerProbe:
-    enabled: false
+    enabled: true
+    type: tcp
+    port: mongo
+    probes:
+      livenessProbe:
+        failureThreshold: 5
+        periodSeconds: 15
+      readinessProbe:
+        failureThreshold: 2
+        periodSeconds: 15
   useStatefulSet: true
   persistence:
     statefulset:

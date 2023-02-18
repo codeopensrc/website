@@ -17,7 +17,6 @@ services:
         volumes:
             - "${FOLDER_LOCATION:-.}/src:/home/app/src"
             - "${FOLDER_LOCATION:-.}/server:/home/app/server"
-            - "${FOLDER_LOCATION:-.}/docker-compose.yml:/home/app/docker-compose.yml"
             #- "${FOLDER_LOCATION:-.}/../notes:/home/app/server/static/md"
         env_file:
             - "${COMPOSE_ENV_FILE:-.env.tmpl}"
@@ -54,8 +53,6 @@ services:
         env_file:
             - "${COMPOSE_ENV_FILE:-.env.tmpl}"
         environment:
-            CONSUL_SERVICE_NAME:    "website"
-            REGISTER_SERVICE:       "true"
             AUTH_URL:               "${AUTH_URL}"
             ENABLE_DB:              "false"
 ###############################################################
