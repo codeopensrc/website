@@ -1,4 +1,11 @@
 
+# 0.8.0 - (*2023-02-20*)
+
+#### **Added (1)**
+- [ [2b8226b](https://gitlab.codeopensrc.com/kc/website/-/commit/2b8226b) ] **`added, changed, removed`** - Update some code to latest react-template standard  
+
+<br><br><br>
+
 # 0.7.0 - (*2023-02-06*)
 
 #### **Massive (1)**
