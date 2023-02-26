@@ -120,6 +120,9 @@ profiles:
 ### For ci builds
 - name: ci
   build:
+    tagPolicy:
+      gitCommit:
+        ignoreChanges: true
     local:
       push: true
     artifacts:
