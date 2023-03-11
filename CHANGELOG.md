@@ -1,4 +1,11 @@
 
+# 0.8.1 - (*2023-03-11*)
+
+#### **Changed (1)**
+- [ [afb77d0](https://gitlab.codeopensrc.com/kc/website/-/commit/afb77d0) ] **`changed`** - Update tpl dep chart and use k8s ingress  
+
+<br><br><br>
+
 # 0.8.0 - (*2023-02-20*)
 
 #### **Added (1)**

@@ -6,10 +6,10 @@ type: application
 ###! Otherwise it is updated in ci when appVersion gets an update
 ###! We _shouldnt_ "release" (triggering version updates) for only chart updates
 ###! TODO: Somehow add safeguard to not update chart version in ci if manually updated
-version: 0.3.1
+version: 0.3.2
 ###! Follows the version in docker-compose.yml
 ###! Updated in CI and should not need manual updates
-appVersion: "0.8.0"
+appVersion: "0.8.1"
 ## Cannot share data between dependency charts using 'import-values'
 ## Data imported only available to manifests in this charts templates/ folder
 dependencies:
