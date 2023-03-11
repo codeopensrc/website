@@ -16,6 +16,7 @@ app:
     ingressClassName: "nginx"
     #annotations:
     #  cert-manager.io/cluster-issuer: letsencrypt-prod
+    #  nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
     hosts:
       - host: www.k8s.example.com
       #- host: www.reloader.k8s.example.com

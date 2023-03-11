@@ -181,6 +181,7 @@ default:
         enabled: true
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-prod
+          nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
         hosts:
           - host: "${INGRESS_HOST}"
         tls:
