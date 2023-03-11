@@ -146,3 +146,5 @@ profiles:
         setValueTemplates:
           app.image.repository: "{{.IMAGE_REPO}}"
           app.image.tag: "{{.IMAGE_TAG}}@{{.IMAGE_DIGEST}}"
+        setValues:
+          app.ingress.tls: ""

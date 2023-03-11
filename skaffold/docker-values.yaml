@@ -18,6 +18,20 @@ app:
         targetContainerPortName: http
       #- servicePort: 5055
       #  targetContainerPortName: reloader
+  ingress:
+    enabled: false
+    ingressClassName: "nginx"
+    #annotations:
+    #  cert-manager.io/cluster-issuer: letsencrypt-staging
+    hosts:
+      - host: www.k8s.example.com
+      #- host: www.reloader.k8s.example.com
+      #  optSvcPort: 5055
+    #tls:
+    #  - hosts:
+    #      - www.k8s.example.com
+    #      - www.reloader.k8s.example.com
+    #    secretName: www-tls
   containerPorts:
     - name: http
       port: 80

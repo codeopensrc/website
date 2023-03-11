@@ -4,6 +4,9 @@ app:
   image:
     pullPolicy: Always
   replicaCount: 2
+  ingress:
+    enabled: false
+    ingressClassName: "nginx"
 db:
   enabled: true
   replicaCount: 1
