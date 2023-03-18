@@ -575,9 +575,6 @@ release_stable:
   - echo $BETA
   - *get_sha_to_build
   - echo $SHA_TO_BUILD
-  ##! Update tag in docker-compose.yml as its built into the image for consul to get the current tag
-  ##! Once deploying consul side-loaded container in helm or something we can finally remove
-  - sed -i "s|${CURVER}-*.*|${CURVER}${SHA_TO_BUILD}|" docker-compose.yml
   - BUILD_TARGET=prod
   - 'BUILD_ARGS="--opt build-arg:BUILD_BASE=ci"'
   - 'IMPORT_CACHE_ARGS="--import-cache type=registry,ref=${PROJECT_APP_IMAGE}:cache"'
@@ -639,9 +636,6 @@ release_version:
   - echo $CURVER
   - echo $BETA
   - echo ${VERSION}
-  ##! Update tag in docker-compose.yml as its built into the image for consul to get the current tag
-  ##! Once deploying consul side-loaded container in helm or something we can finally remove
-  - sed -i "s|${CURVER}-*.*|${VERSION}|" docker-compose.yml
   - BUILD_TARGET=prod
   - 'BUILD_ARGS="--opt build-arg:BUILD_BASE=ci"'
   - 'IMPORT_CACHE_ARGS="--import-cache type=registry,ref=${PROJECT_APP_IMAGE}:cache"'

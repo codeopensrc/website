@@ -25,13 +25,13 @@ app:
     #  cert-manager.io/cluster-issuer: letsencrypt-staging
     #  nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
     hosts:
-      - host: www.k8s.example.com
-      #- host: www.reloader.k8s.example.com
+      - host: www.local.test
+      #- host: www.reloader.local.test
       #  optSvcPort: 5055
     #tls:
     #  - hosts:
-    #      - www.k8s.example.com
-    #      - www.reloader.k8s.example.com
+    #      - www.local.test
+    #      - www.reloader.local.test
     #    secretName: www-tls
   containerPorts:
     - name: http
@@ -57,10 +57,11 @@ app:
   #        mountPath: /var/log
   configMapData:
     DEV_DATABASE_URL_ORIGIN: "mongodb://website-db:27017"
-    LOG_EVERY_NUM_CHECKS: 5
     DEV_ENV:   "true"
     ENABLE_DB: "true"
     LIVE_RELOADER_PORT: 5055
+    LOG_EVERY_NUM_CHECKS: 5
+    #PM2_TZ: "America/Los_Angeles"
 db:
   enabled: true
   replicaCount: 1

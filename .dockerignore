@@ -1,10 +1,23 @@
-node_modules/
-logs
 .git
+.DS_Store
+.dockerignore
+.gitignore
+.gitlab-ci.yml
 
 npm-debug.log
-.DS_Store
+Dockerfile
+build.sh
 pub/app.bundle.js
 pub/index.html
+
+**/*.vim
+**/*.swp
+**/*.swo
+**/*.env
+
+logs
+dumps
+node_modules/
+charts/
 
 .obsidian

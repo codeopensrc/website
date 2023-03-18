@@ -51,10 +51,11 @@ app:
   #        mountPath: /var/log
   configMapData:
     DEV_DATABASE_URL_ORIGIN: "mongodb://website-db-0.website-db,website-db-1.website-db,website-db-2.website-db:27017"
-    LOG_EVERY_NUM_CHECKS: 5
     DEV_ENV:   "true"
     ENABLE_DB: "true"
     LIVE_RELOADER_PORT: 5055
+    LOG_EVERY_NUM_CHECKS: 5
+    #PM2_TZ: "America/Los_Angeles"
 db: 
   enabled: true
   replicaCount: 3

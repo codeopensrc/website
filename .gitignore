@@ -1,18 +1,17 @@
-.git
 node_modules/
-logs/
-ignore/*
+logs
+.git
 dumps
-.env
-*.swp
-*.vim
-*.tgz
 
+index.html
 npm-debug.log
 .DS_Store
 
+ignore/*
 *bundle.js
-pub/index.html
-
-# Allow env yaml files
+*.env
+*.swp
+*.swo
+*.vim
+*.tgz
 env*.yaml
