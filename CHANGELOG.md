@@ -1,4 +1,11 @@
 
+# 0.9.0 - (*2023-03-23*)
+
+#### **Massive (1)**
+- [ [1adbdad](https://gitlab.codeopensrc.com/kc/website/-/commit/1adbdad) ] **`massive`** - Upd react, some components, and most npm packages [#2](https://gitlab.codeopensrc.com/kc/website/-/issues/2)  
+
+<br><br><br>
+
 # 0.8.1 - (*2023-03-11*)
 
 #### **Changed (1)**
