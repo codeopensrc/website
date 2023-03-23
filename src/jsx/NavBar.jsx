@@ -1,23 +1,17 @@
 'use strict';
 
-const React = require('react');
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-module.exports = React.createClass({
-    getInitialState: function () {
-        return {};
-    },
+const NavBar = function(props) {
+    return (
+        <div id="navBar">
+            <Link to={"/"} className={"navBtn"}>Home</Link>
+            <Link to={"/games"} className={"navBtn"}>Games</Link>
+            {/* <Link to={"/chat"} className={"navBtn"}>Chat</Link> */}
+            {/* <Link to={"/blog"} className={"navBtn"}>Blog</Link> */}
+        </div>
+    );
+};
 
-    render: function () {
-        // <a className="navBtn" href='/chat'>WebRTC Chat</a>
-        // <a className="navBtn" href='/blog'>Blog</a>
-
-        return (
-            <div id="navBar">
-                <a className="navBtn" href='/'>Home</a>
-                <a className="navBtn" href='/games'>Games</a>
-            </div>
-        );
-    }
-
-
-});
+export { NavBar as default };

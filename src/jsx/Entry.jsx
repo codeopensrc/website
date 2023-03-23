@@ -1,25 +1,32 @@
 'use strict';
 
-const FullPost = require('./FullPost.jsx');
-const Portfolio = require('./Portfolio.jsx');
-const MsgBox = require('./MsgBox.jsx');
-const Home = require('./Home.jsx');
-const Markdown = require('./Markdown.jsx');
-const Games = require('./Games.jsx');
-const React = require('react');
-const ReactDOM = require('react-dom');
+import { hot } from 'react-hot-loader/root';
+//const FullPost = require('./FullPost.jsx');
+//const Portfolio = require('./Portfolio.jsx');
+import MsgBox from "./MsgBox.jsx"
+//const Home = require('./Home.jsx');
+import Markdown from "./Markdown.jsx"
+import Games from "./Games.jsx"
+import React, { useEffect, useState, useCallback } from 'react';
+import DOM from 'react-dom';
+import {
+    BrowserRouter as Router,
+    Route,
+    Switch,
+    Link
+} from 'react-router-dom';
 
 
-require("../style/style.less");
+import "../style/style.less"
 
 
-const Route = React.createClass({
+const Entry = function() {
+    //const { } = props
+    //const [var, fn] = useState()
 
-    componentDidMount: function() {
+    //useEffect(() => {})
 
-    },
-
-    generateIframeTag: function(repoid, snipid, src) {
+    const generateIframeTag = (repoid, snipid, src) => {
         const elementId = `${repoid}-${snipid}`;
         const styles = `<style>
         *{ margin:0; }
@@ -36,9 +43,9 @@ const Route = React.createClass({
         iframe.className = "snippet"
         iframe.frameBorder = 0;
         return iframe
-    },
+    }
 
-    updateSnippetScripts: function() {
+    const updateSnippetScripts = () => {
         let scripts = document.getElementsByTagName("script")
         for (let i = 0; i < scripts.length; i++) {
             let script = scripts[i];
@@ -55,13 +62,8 @@ const Route = React.createClass({
             let iframe = this.generateIframeTag(projectRepo || i, snippetId, src)
             script.insertAdjacentElement('afterend', iframe);
         }
-    },
+    }
 
-  render: function () {
-
-    let Component = null;
-    let path = location.pathname.split('/')[1];
-    let host = location.hostname;
 
     //case "blog": Component = <Home updateSnippetScripts={this.updateSnippetScripts}/>;
     //break;
@@ -70,21 +72,26 @@ const Route = React.createClass({
     //case "portfolio": Component = <Portfolio />;
     //break;
 
-    switch(path) {
-      case "chat": Component = <MsgBox />;
-      break;
-      case "games": Component = <Games baseAssetFolder={"unity"}/>
-      break;
-      default: Component = <Markdown />;
-    }
-
     return (
-        <div>
-            {Component}
-        </div>
+        <Router>
+            <div id={"component-entry"}>
+                <Switch>
+                    <Route exact path={"/"} render={() => 
+                        <Markdown />
+                    }/>
+                    <Route path={"/games"} render={() =>
+                        <Games baseAssetFolder={"unity"}/>
+                    }/> 
+                    <Route path={"/chat"} render={() => 
+                        <MsgBox />
+                    }/>
+                </Switch>
+            </div>
+        </Router>
     );
-  }
 
-});
+};
 
-ReactDOM.render(<Route />, document.getElementById('index'));
+export default hot(Entry);
+
+DOM.render(<Entry />, document.getElementById("main"))

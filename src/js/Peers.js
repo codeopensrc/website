@@ -64,7 +64,6 @@ let offersReceived = [];
 let offersInTransit = [];
 let numOfGeneratedPeers = 0;
 
-let WebSocket;
 let ws;
 let wrtc = {
     RTCPeer: {},
@@ -84,9 +83,11 @@ const MASTER_PEER_CLEANUP_INTERVAL = ONE_SECOND * 60;
 const CHECK_FOR_NEW_PEERS = true;
 
 try {
-    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
-        navigator.mediaDevices.getUserMedia;
-    WebSocket = window.WebSocket;
+    //navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || 
+        //navigator.mediaDevices.getUserMedia;
+    if(navigator.mediaDevices.getUserMedia && typeof(navigator.mediaDevices.getUserMedia) == "function") {
+        console.log("Has user media")
+    }
 }
 catch(e) {
     console.log("Could not find user media");
@@ -394,7 +395,9 @@ MasterPeer.prototype.getUserMedia = function (opts) {
         return;
     }
     const constraints = { video: opts.video, audio: opts.audio }
-    navigator.getUserMedia(constraints, this.gotStream.bind(this, opts.localDiv), this.userMediaError.bind(this));
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then((mediaStream) => this.gotStream(opts.localDiv, mediaStream))
+    .catch(this.userMediaError)
 }
 MasterPeer.prototype.name = "";
 MasterPeer.prototype.room = "";

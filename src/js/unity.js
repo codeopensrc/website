@@ -1,5 +1,5 @@
 
-module.exports = {
+const unity = {
 
     load: (foldername, fullprojectpath, projectname) => {
         let buildUrl = `${fullprojectpath}/Build`;
@@ -67,3 +67,5 @@ module.exports = {
         document.body.appendChild(script);
     }
 }
+
+export { unity as default };

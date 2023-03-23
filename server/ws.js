@@ -2,7 +2,7 @@
 
 const WebSocketServer = require('ws').Server;
 
-const { auth } = require("os-npm-util");
+const { auth } = require("os-npm-util/server");
 
 const serverState = require("./serverState.js");
 // GENERAL NOTES:
@@ -51,9 +51,9 @@ module.exports = {
         this.wss.broadcast = (data) => {
             this.wss.clients.forEach((client) => {
                 if(client.readyState === WebSocket.OPEN) {
-                    this.canSendInfo(client, (canSend) => {
+                    //this.canSendInfo(client, (canSend) => {
                          canSend && client.send(data);
-                    })
+                    //})
                 }
             });
         };

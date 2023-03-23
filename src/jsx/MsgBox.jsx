@@ -1,6 +1,6 @@
 "use strict";
 
-import React, { PropTypes } from 'react';
+import React from 'react';
 import MasterPeer from "../js/Peers.js";
 
 import "../style/MsgBox.less";
@@ -8,9 +8,11 @@ import "../style/MsgBox.less";
 // TODO: Add list of currently open rooms
 // TODO: Add possible password protection if first user wishes
 
-module.exports = React.createClass({
-    getInitialState: function() {
-        return {
+class MsgBox extends React.Component {
+
+    constructor(props) {
+        super(props)
+        this.state = {
             text: "",
             connected: false,
             peers: [],
@@ -20,23 +22,23 @@ module.exports = React.createClass({
             room: "",
             nameTaken: false,
             joining: false
-        };
-    },
+        }
+    }
 
-    componentDidMount: function() {
+    componentDidMount() {
         this.refs["sendButton"].disabled = true;
         this.refs["start"].disabled = true;
         // setTimeout(() => {
         //     window.open("http://localhost:8001/chat/lobby")
         //     window.close()
         // }, 15000)
-    },
+    }
 
-    componentWillUnmount: function() {
+    componentWillUnmount() {
         this.MasterPeer.destroy()
-    },
+    }
 
-    constructRoom: function () {
+    constructRoom() {
         // Basic check for domain name
         let fqdn = `${location.hostname.match(/[\w\d]+\.[\w\d]+$/)}`
         this.refs.joinRoom.disabled = true;
@@ -103,24 +105,24 @@ module.exports = React.createClass({
                 })
             })
         })
-    },
+    }
 
-    handleChange: function (e) {
+    handleChange(e) {
         if(e.target.value !== "") { this.MasterPeer.sendData({type: "evt", name: "isTyping"})}
         if(e.target.value === "") { this.MasterPeer.sendData({type: "evt", name: "notTyping"})}
         this.setState({ text: e.target.value })
-    },
+    }
 
-    handleSend: function() {
+    handleSend() {
         let msg = this.state.text;
         if(msg === "") { return; }
         this.MasterPeer.sendData({type: "msg", name: "userMsg", msg: msg});
         this.appendMsg(this.MasterPeer.name, msg)
         this.setState({ text: "" })
         this.MasterPeer.sendData({type: "evt", name: "notTyping"})
-    },
+    }
 
-    appendMsg: function (who, msg) {
+    appendMsg(who, msg) {
         let backgroundColor = (this.state.linesOfText % 2 === 0) ? "DarkBG" : "LightBG"
         let date = new Date();
         let formatHours = (input) => input > 12 || input === 0 ? Math.abs(input - 12) : input;
@@ -131,14 +133,14 @@ module.exports = React.createClass({
         let currentScroll = document.getElementById("chat").scrollTop;
         document.getElementById("chat").scrollTop = currentScroll+100;
         this.setState({ linesOfText: (this.state.linesOfText+1) })
-    },
+    }
 
-    keyPress: function (e) {
+    keyPress(e) {
         if(!this.state.connected) { return; }
         if(e.key === "Enter") { this.handleSend(); }
-    },
+    }
 
-    getLocalUserMedia: function () {
+    getLocalUserMedia() {
         let disabled = this.refs["start"].disabled;
         let shareAudio = !this.refs.audio.checked;
         let shareVideo = this.refs.video.checked;
@@ -147,15 +149,15 @@ module.exports = React.createClass({
         }
         this.MasterPeer.getUserMedia({localDiv: "localStream", audio: shareAudio, video: shareVideo});
         this.refs["start"].disabled = true;
-    },
+    }
 
-    toggleMuteAll: function () {
+    toggleMuteAll() {
         this.setState({muteAll: !this.state.muteAll}, () => {
             this.applyCurrentMute();
         })
-    },
+    }
 
-    applyCurrentMute: function () {
+    applyCurrentMute() {
         let videos = [];
         let remotePeers = Array.from(document.getElementById("videoChatBox").childNodes);
         remotePeers.forEach((videoDiv) => {
@@ -164,20 +166,20 @@ module.exports = React.createClass({
             videos.forEach((video) => { video.muted = this.state.muteAll; })
         })
         videos.length = 0;
-    },
+    }
 
-    muteLatestPeer: function () {
+    muteLatestPeer() {
         let remotePeers = Array.from(document.getElementById("videoChatBox").childNodes);
         let latestPeer = remotePeers[remotePeers.length-1];
         Array.from(latestPeer.childNodes).some((el) =>
             el.className === "remoteVideo" && (el.muted = this.state.muteAll) );
-    },
+    }
 
-    handleShareChange: function () {
+    handleShareChange() {
         if(this.refs["start"].disabled) { this.getLocalUserMedia(); }
-    },
+    }
 
-    render: function () {
+    render() {
 
         let welcomeMsg = (
             <div style={{ border: "1px solid black", textAlign: "center",
@@ -185,7 +187,7 @@ module.exports = React.createClass({
                 Enter a room and username to join. <br/>
                 Room: <input ref="room" defaultValue="lobby" placeholder="Room" type="text" />
                 User: <input ref="userName" defaultValue={`Guest ${(Math.random() * 10000).toFixed(0)}`} type="text" />
-                <button ref="joinRoom" onClick={this.constructRoom}>Join Room</button>
+                <button ref="joinRoom" onClick={this.constructRoom.bind(this)}>Join Room</button>
                 <div style={{marginLeft: 5, color: "red"}}>{this.state.nameTaken? <strong>Name Taken</strong>:null}</div>
             </div>
          )
@@ -210,9 +212,9 @@ module.exports = React.createClass({
                 </div>
                 <div id="chatBox">
                     <div className="msgBar">
-                        <button className="chatButton" ref="sendButton" onClick={this.handleSend}>Send</button>
+                        <button className="chatButton" ref="sendButton" onClick={this.handleSend.bind(this)}>Send</button>
                         <input className="msgInput" type="text" value={this.state.text}
-                            onChange={this.handleChange} onKeyPress={this.keyPress}/>
+                            onChange={this.handleChange.bind(this)} onKeyPress={this.keyPress.bind(this)}/>
                     </div>
                     <div id="chat"></div>
                 </div>
@@ -227,10 +229,10 @@ module.exports = React.createClass({
                     <div id="localVideoDiv">
                         <p>You</p>
                         <video autoPlay muted id="localStream"></video>
-                        <p><input ref="audio" onChange={this.handleShareChange} type="checkbox" />Mute Mic</p>
-                        <p><input ref="video" defaultChecked onChange={this.handleShareChange} type="checkbox" />Share Video</p>
-                        <button ref="start" onClick={this.getLocalUserMedia}>Start A/V Stream</button>
-                        <button ref="muteAll" onClick={this.toggleMuteAll}>{this.state.muteAll?"Unmute":"Mute"} All Peers</button>
+                        <p><input ref="audio" onChange={this.handleShareChange.bind(this)} type="checkbox" />Mute Mic</p>
+                        <p><input ref="video" defaultChecked onChange={this.handleShareChange.bind(this)} type="checkbox" />Share Video</p>
+                        <button ref="start" onClick={this.getLocalUserMedia.bind(this)}>Start A/V Stream</button>
+                        <button ref="muteAll" onClick={this.toggleMuteAll.bind(this)}>{this.state.muteAll?"Unmute":"Mute"} All Peers</button>
                     </div>
                 </div>
                 <div id="bottom">
@@ -252,4 +254,6 @@ module.exports = React.createClass({
 
         )
     }
-})
+};
+
+export { MsgBox as default };

@@ -9,8 +9,8 @@ app:
     ports:
       - servicePort: 80
         targetContainerPortName: http
-      #- servicePort: 5055
-      #  targetContainerPortName: reloader
+      - servicePort: 5055
+        targetContainerPortName: reloader
   ingress:
     enabled: false
     ingressClassName: "nginx"
@@ -19,8 +19,8 @@ app:
     #  nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
     hosts:
       - host: www.k8s.example.com
-      #- host: www.reloader.k8s.example.com
-      #  optSvcPort: 5055
+      - host: www.reloader.k8s.example.com
+        optSvcPort: 5055
     #tls:
     #  - hosts:
     #      - www.k8s.example.com
@@ -29,25 +29,25 @@ app:
   containerPorts:
     - name: http
       port: 80
-    #- name: reloader
-    #  port: 5055
-  #lifecyclePostStartCommand:
-  #  ["/bin/sh", "-c", "npm run reloader >> /var/log/hotreload.log 2>&1 &"]
-  #volumeMounts:
-  #  - name: shared-logs
-  #    mountPath: /var/log
-  #    mountType:
-  #      emptyDir: {}
-  #additionalContainers:
-  #  - name: hotreload-logger
-  #    image: busybox
-  #    command: ["/bin/sh", "-c",
-  #      "while [ ! -f /var/log/hotreload.log ]; do sleep 5; done; \
-  #       tail -f /var/log/hotreload.log"
-  #    ]
-  #    volumeMounts:
-  #      - name: shared-logs
-  #        mountPath: /var/log
+    - name: reloader
+      port: 5055
+  lifecyclePostStartCommand:
+    ["/bin/sh", "-c", "npm run reloader >> /var/log/hotreload.log 2>&1 &"]
+  volumeMounts:
+    - name: shared-logs
+      mountPath: /var/log
+      mountType:
+        emptyDir: {}
+  additionalContainers:
+    - name: hotreload-logger
+      image: busybox
+      command: ["/bin/sh", "-c",
+        "while [ ! -f /var/log/hotreload.log ]; do sleep 5; done; \
+         tail -f /var/log/hotreload.log"
+      ]
+      volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log
   configMapData:
     DEV_DATABASE_URL_ORIGIN: "mongodb://website-db:27017"
     DEV_ENV:   "true"

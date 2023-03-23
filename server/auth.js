@@ -1,7 +1,7 @@
 "use strict";
 
 const url = require("url")
-const { auth } = require("os-npm-util");
+const { auth } = require("os-npm-util/server");
 
 const AUTH_URL = process.env.AUTH_URL || ""
 const AUTH_PROTO = AUTH_URL ? url.parse(AUTH_URL).protocol : ""
