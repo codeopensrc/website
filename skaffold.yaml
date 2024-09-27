@@ -10,6 +10,11 @@
     dest: /home/app
   - src: "server/**"
     dest: /home/app
+  ##! Touch another synced file to sync files from outside docker build context
+  ##! Uncomment for developing os-npm-util
+  #- src: "../npm-util/**"   
+  #  dest: /home/app/node_modules/os-npm-util
+  #  strip: "../npm-util/"
 
 .custom_build_deps: &custom_build_deps
   paths:
@@ -17,6 +22,8 @@
   - server/**
   - Dockerfile
   - package.json
+  ##! Uncomment for developing os-npm-util
+  #- ../npm-util/**  
   ignore:
   - "**/*.swp"
 

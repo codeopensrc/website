@@ -11,6 +11,7 @@ let plugins = [ new HtmlWebpackPlugin({
         filename: "index.html",
         hash: true
     }),
+    //For native node modules in the browser
     new webpack.ProvidePlugin({
         process: 'process/browser',
         Buffer: ['buffer', 'Buffer'],
@@ -70,6 +71,7 @@ module.exports = [{
         //    options: { ignored: ["server/bin", "server/output", "server/static", "server/.*"] }
         //}
     },
+    //For native node modules in the browser
     resolve: {
         fallback: {
             "buffer": require.resolve("buffer/")
