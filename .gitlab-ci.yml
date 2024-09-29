@@ -199,9 +199,9 @@ default:
         BLOG_KEY: "${BLOG_KEY}"
       configMapData:
         ENABLE_DB:            "${ENABLE_DB}"
-        DEV_DATABASE_URL_ORIGIN: "mongodb://${APPNAME}-db:27017"
         AUTH_URL:             "${AUTH_URL}"
         GITLAB_API_URL:       "${GITLAB_API_URL}"
+        DEV_DATABASE_URL_ORIGIN: "mongodb://${APPNAME}-db:27017"
     db:
       enabled: $ENABLE_DB
       ciLabels:
@@ -551,6 +551,8 @@ commit_stable:
   - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${CURVER}-${COMMIT_SHA}\"|" ${APP_CHART_DIR}/Chart.yaml'
   - helm dependency update ${APP_CHART_DIR}
   - git add docker-compose.yml ${APP_CHART_DIR}/Chart.yaml ${APP_CHART_DIR}/Chart.lock
+  ## publish important after 'git add' as publish updates Chart.lock to use remote helm repo
+  ##  which we dont want in vcs but do want when packaging it up for external use
   - *publish_helm_charts
   - git config --global user.name "${GITLAB_USER_NAME}"
   - git config --global user.email "${GITLAB_USER_EMAIL}"
@@ -610,6 +612,8 @@ commit_version:
   - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${VERSION}\"|" ${APP_CHART_DIR}/Chart.yaml'
   - helm dependency update ${APP_CHART_DIR}
   - git add docker-compose.yml ${APP_CHART_DIR}/Chart.yaml ${APP_CHART_DIR}/Chart.lock
+  ## publish important after 'git add' as publish updates Chart.lock to use remote helm repo
+  ##  which we dont want in vcs but do want when packaging it up for external use
   - *publish_helm_charts
   - git config --global user.name "${GITLAB_USER_NAME}"
   - git config --global user.email "${GITLAB_USER_EMAIL}"
@@ -659,7 +663,7 @@ deploy_production:
   - kubernetes_prod
   variables:
     KUBE_NAMESPACE: production
-    AUTH_URL: ${CI_SERVER_URL}
+    #AUTH_URL: ${CI_SERVER_URL}
   script:
   - echo "$KUBE_NAMESPACE"
   - APPNAME=${SERVICE_NAME}

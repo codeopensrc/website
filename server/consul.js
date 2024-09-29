@@ -8,7 +8,7 @@ const consulAPIPort = 8500;
 const CONSUL_HOST = process.env.CONSUL_HOST || consulBridgeIP
 const CONSUL_PORT = process.env.CONSUL_PORT || consulAPIPort
 const CONSUL_CHECK_UUID = process.env.POD_NAME || os.hostname();
-const CONSUL_SERVICE_NAME = process.env.CONSUL_SERVICE_NAME || "react"
+const CONSUL_SERVICE_NAME = process.env.CONSUL_SERVICE_NAME || "website"
 const IMAGE_TAG = process.env.IMAGE_TAG || "dev"
 
 module.exports = {

@@ -10,7 +10,7 @@ const CONSUL_RETRY_INTERVAL = 1000 * 2
 const DB_RETRY_INTERVAL = 1000 * 2
 
 const KEY = process.env.BLOG_KEY || "dev";
-const MONGO_DB_NAME = process.env.MONGO_DB_NAME || "blog";
+const MONGO_DB_NAME = process.env.MONGO_DB_NAME || "website";
 const DEV_DB_URL = process.env.DEV_DATABASE_URL_ORIGIN || "";
 const FULL_DEV_DB_URL = DEV_DB_URL ? `${DEV_DB_URL.replace(/\/$/, "")}/${MONGO_DB_NAME}` : ""
 
@@ -94,38 +94,10 @@ module.exports = {
         res.end(JSON.stringify({status: "Error"}));
     },
 
-    resWithNoAccess: function (res) {
-        res.writeHead(403, {'Access-Control-Allow-Origin' : '*'} );
-        res.end(JSON.stringify({authorized: false}));
-    },
-
-    checkAccess: function (headers, accessReq, callback) {
-        auth.checkAccess({headers, app: "website", accessReq: accessReq})
-        .then(({ status, hasPermissions }) => {
-            if(!status) {
-                console.log("User has incorrect authentication credentials");
-                return callback({status: false})
-            }
-            if(!hasPermissions) {
-                console.log("User does not have required access for action");
-                return callback({status: false})
-            }
-            callback({status: true})
-        })
-        .catch((e) => { console.log("ERR - MONGO.CHECKACCESS:", e); callback({status: "error", err: e}) })
-    },
-
-    createPostUrl: function(title, date) {
-        let year = new Date(date).getFullYear();
-        let month = new Date(date).getMonth()+1;
-        let addZero = (input) => { return input < 10 ? "0"+input : input }
-        let spacesReplaced = title.toLowerCase().replace(/ /g, "-");
-        let punctuationRemoved = spacesReplaced.replace(/[()\[\]$#<>;:.!,?]/g, "");
-        let urlWithDate = "/posts/"+year+"/"+addZero(month)+"/"+punctuationRemoved
-        return urlWithDate;
-    },
-
-    retrieve: function (type, headers, res) {
+    // ================================================================
+    // ================ CRUD Operation for mongo =============== 
+    // ================================================================ 
+    retrieve: function (type, res) {
         let db = this.db
         if(!db) { return this.resWithErr("No DB Connection", res) }
         let collection = db.collection(type);
@@ -138,7 +110,8 @@ module.exports = {
         });
     },
 
-    retrieveOne: function (query, type, headers, res) {
+    // query = {mongoJsonQuery}
+    retrieveOne: function (query, type, res) {
         let db = this.db
         if(!db) { return this.resWithErr("No DB Connection", res) }
         let collection = db.collection(type);
@@ -151,17 +124,19 @@ module.exports = {
         });
     },
 
-    submit: function (doc, type, headers, res) {
-        this.checkAccess(headers, "admin", ({status, err}) => {
-            if(doc.storageKey !== KEY || !status) { return this.resWithNoAccess(res); }
+    // clientJson: {storageKey: key, doc: {mongoJsonDoc}}
+    submit: function (clientJson, type, headers, res) {
+        auth.getAccess(headers, "user", ({status, data}) => {
+            if(clientJson.storageKey !== KEY || !status) { return auth.resWithNoAccess(res); }
             if(status === "error") { return this.resWithErr(err, res); }
+            delete clientJson.storageKey
             let db = this.db
             if(!db) { return this.resWithErr("No DB Connection", res) }
             let collection = db.collection(type);
             // Until we remove storagekey and update the client
-            doc = doc.post ? doc.post : doc;
+            let doc = clientJson.post ? clientJson.post : clientJson;
+            //Update if id provided, otherwise creates new id and entry
             let id = doc.id ? ObjectID(doc.id) : ObjectID()
-            // let id = doc._id ? ObjectID(doc._id) : ObjectID()
             type === "posts" && (doc.url = this.createPostUrl(doc.title, doc.date))
             delete doc.id
 
@@ -175,14 +150,18 @@ module.exports = {
         })
     },
 
-    remove: function(doc, type, headers, res) {
-        this.checkAccess(headers, "admin", ({status, err}) => {
-            if(doc.storageKey !== KEY || !status) { return this.resWithNoAccess(res); }
+    // clientJson: {storageKey: key, doc: {id: mongoObjectID}}
+    remove: function(clientJson, type, headers, res) {
+        auth.getAccess(headers, "user", ({status, data}) => {
+            if(clientJson.storageKey !== KEY || !status) { return auth.resWithNoAccess(res); }
             if(status === "error") { return this.resWithErr(err, res); }
+            delete clientJson.storageKey
+
             let db = this.db
             if(!db) { return this.resWithErr("No DB Connection", res) }
             let collection = db.collection(type);
-            // let id = doc._id ? ObjectID(doc._id) : "";
+
+            let doc = clientJson.doc ? clientJson.doc : clientJson;
             let id = doc.id ? ObjectID(doc.id) : "";
 
             collection.findOneAndDelete({"_id": id}, (err, docs) => {
@@ -192,5 +171,15 @@ module.exports = {
                 res.end("");
             });
         })
+    },
+
+    createPostUrl: function(title, date) {
+        let year = new Date(date).getFullYear();
+        let month = new Date(date).getMonth()+1;
+        let addZero = (input) => { return input < 10 ? "0"+input : input }
+        let spacesReplaced = title.toLowerCase().replace(/ /g, "-");
+        let punctuationRemoved = spacesReplaced.replace(/[()\[\]$#<>;:.!,?]/g, "");
+        let urlWithDate = "/posts/"+year+"/"+addZero(month)+"/"+punctuationRemoved
+        return urlWithDate;
     },
 }

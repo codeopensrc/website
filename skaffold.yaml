@@ -26,6 +26,7 @@
   #- ../npm-util/**  
   ignore:
   - "**/*.swp"
+  - "**/*.swo"
 
 .helm_flags: &helm_flags
   install: ["--timeout=300s"]
