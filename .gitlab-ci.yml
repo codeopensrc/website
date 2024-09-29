@@ -614,8 +614,6 @@ commit_version:
   - 'sed -i "s|tag: \"${CURVER}-*.*\"|tag: \"${VERSION}\"|" ${APP_CHART_DIR}/values.yaml'
   - helm dependency update ${APP_CHART_DIR}
   - git add docker-compose.yml ${APP_CHART_DIR}/Chart.yaml ${APP_CHART_DIR}/values.yaml ${APP_CHART_DIR}/Chart.lock
-  ## publish important after 'git add' as publish updates Chart.lock to use remote helm repo
-  ##  which we dont want in vcs but do want when packaging it up for external use
   - *publish_helm_charts
   - git config --global user.name "${GITLAB_USER_NAME}"
   - git config --global user.email "${GITLAB_USER_EMAIL}"
