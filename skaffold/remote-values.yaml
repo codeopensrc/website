@@ -1,4 +1,7 @@
 ## skaffold helm deploy requires the image key
+.reloader_port: &reloader_port 5055
+.enable_db: &enable_db true
+
 app:
   enabled: true
   image:
@@ -9,7 +12,7 @@ app:
     ports:
       - servicePort: 80
         targetContainerPortName: http
-      - servicePort: 5055
+      - servicePort: *reloader_port
         targetContainerPortName: reloader
   ingress:
     enabled: false
@@ -20,7 +23,7 @@ app:
     hosts:
       - host: www.k8s.example.com
       - host: www.reloader.k8s.example.com
-        optSvcPort: 5055
+        optSvcPort: *reloader_port
     #tls:
     #  - hosts:
     #      - www.k8s.example.com
@@ -30,7 +33,7 @@ app:
     - name: http
       port: 80
     - name: reloader
-      port: 5055
+      port: *reloader_port
   lifecyclePostStartCommand:
     ["/bin/sh", "-c", "npm run reloader >> /var/log/hotreload.log 2>&1 &"]
   volumeMounts:
@@ -50,13 +53,13 @@ app:
           mountPath: /var/log
   configMapData:
     DEV_DATABASE_URL_ORIGIN: "mongodb://website-db:27017"
-    DEV_ENV:   "true"
-    ENABLE_DB: "true"
-    LIVE_RELOADER_PORT: 5055
+    DEV_ENV:   true
+    ENABLE_DB: *enable_db
+    LIVE_RELOADER_PORT: *reloader_port
     LOG_EVERY_NUM_CHECKS: 5
     #PM2_TZ: "America/Los_Angeles"
 db:
-  enabled: true
+  enabled: *enable_db
   replicaCount: 1
   image:
     repository: mongo
@@ -92,4 +95,4 @@ db:
     - mountPath: /data/db
       subPath: db
   secretStringData:
-    MONGO_INITDB_DATABASE: mongo
+    MONGO_INITDB_DATABASE: website

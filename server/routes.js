@@ -4,21 +4,20 @@ const url = require("url");
 const fs = require("fs");
 const https = require("https");
 const db = require("./mongo.js");
-const mongoose = require('mongoose')
-const ObjectID = mongoose.Types.ObjectId
-const auth = require("./auth.js");
-
-const KEY = process.env.BLOG_KEY || "dev";
-const STATIC_FILES = process.env.STATIC_FILES || "./server/static";
-const GITLAB_API_URL = process.env.GITLAB_API_URL || "";
+//const mongoose = require('mongoose')
+//const ObjectID = mongoose.Types.ObjectId
+//const auth = require("./auth.js");
 
 // Toggle initializing DB
 const enableDB = process.env.ENABLE_DB == "true"
 db.init(enableDB)
 
+const KEY = process.env.BLOG_KEY || "dev";
+const STATIC_FILES = process.env.STATIC_FILES || "./server/static";
+const GITLAB_API_URL = process.env.GITLAB_API_URL || "";
+
 let gameList = [];
 generateGameList((list) => gameList = list)
-
 
 const routes = function (req, res) {
 
@@ -49,9 +48,9 @@ const routes = function (req, res) {
             break;
             //case "/api/get/menu": auth.getMenu(headers, respond) //username / key
             //break;
-            //case "/api/get/username": getUser(headers, "user", respond) //username / key
+            //case "/api/get/username": auth.getUser(headers, respond) //username / key
             //break;
-            //case "/api/post/logout": sendLogout(headers, respond) //username / key
+            //case "/api/post/logout": auth.sendLogout(headers, respond) //username / key
             //break;
             case "/api/get/gamelist": respond({status: true, body: gameList})
             break;
@@ -69,11 +68,11 @@ const routes = function (req, res) {
 
             //case "/ajaxGet": db.retrieve("posts", headers, res)
             //break;
-            //case "/ajaxGetTodo": db.retrieve("todo_list", headers, res)
+            //case "/ajaxGetTodo": db.retrieve("todo_list", res)
             //break;
             //case "/ajaxGetSingle": db.retrieveOne({_id: ObjectID(parsed.id)}, "posts", headers, res)
             //break;
-            //case "/ajaxGetFullPost": db.retrieveOne({url: parsed.url}, "posts", headers, res)
+            //case "/ajaxGetFullPost": db.retrieveOne({url: parsed.url}, "posts", res)
             //break;
 
             //case "/ajaxRemoveTodoItem": db.remove(parsed, "todo_list", headers, res)
@@ -96,7 +95,6 @@ const routes = function (req, res) {
             default: respond();
         }
     })
-
 }
 
 function sendBadgeJson(headers, badgeType, respond) {
@@ -184,53 +182,6 @@ function sendMarkdownDir(headers, respond) {
     })
 }
 
-// TODO: Maybe start caching credentials for a minute at a time to prevent
-// multiple consecutive and frequent calls
-function checkAccess(headers, app, accessReq, callback) {
-    auth.checkAccess({headers, app, accessReq})
-    .then(({ status, hasPermissions }) => {
-        if(!status) {
-            console.log("checkAccess: User has incorrect authentication credentials");
-            return callback({status: false, data: "Incorrect credentials"})
-        }
-        if(!hasPermissions) {
-            console.log("checkAccess: User does not have required access for action");
-            return callback({status: false, data: "Insufficient priveleges"})
-        }
-        callback({status: true})
-    })
-    .catch((e) => {
-        console.log("ERR - ROUTES.CHECKACCESS:\n", e);
-        callback({status: "error", data: e})
-    })
-}
-
-function sendLogout(headers, respond) {
-    auth.logout({headers, app: "website"})
-    .then(({ status }) => {
-        if(!status) {
-            console.log("sendLogout: User has incorrect authentication credentials");
-            return respond({status: false, data: "Incorrect credentials"})
-        }
-        respond({status: true, data: "Success"})
-    })
-    .catch((e) => {
-        console.log("ERR - ROUTES.LOGOUT:\n", e);
-        respond({status: "error", data: e})
-    })
-}
-
-function getUser(headers, accessReq, respond) {
-    checkAccess(headers, "website", accessReq, ({status, data}) => {
-        if(status) {
-            let email = headers["auth-email"]
-            respond({status: true, data: email})
-        }
-        else {
-            respond({status: false, data})
-        }
-    })
-}
 
 function generateGameList(cb) {
     let list = []

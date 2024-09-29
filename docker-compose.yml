@@ -9,7 +9,7 @@ services:
         image: website/app:dev
         ports:
             - "5105:80"    # Vanilla watch `npm run watch`
-            - "5155:5155"  # Hot reloading server `npm run reloader`
+            - "5155:5055"  # Hot reloading server `npm run reloader`
         build:
             context: .
             target: src
@@ -38,7 +38,7 @@ services:
         ports: ["27017:27017"]
         restart: on-failure
         environment:
-            MONGO_INITDB_DATABASE: "${MONGO_DB_NAME:-mongo}"
+            MONGO_INITDB_DATABASE: "${MONGO_DB_NAME:-website}"
         volumes:
             - temp_data:/data/db
     ###############################################################

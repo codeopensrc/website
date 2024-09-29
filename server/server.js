@@ -17,8 +17,8 @@ const BIN = process.env.BIN || "./server/bin";
 const PUB_FILES = process.env.PUB_FILES || "./pub";
 const STATIC_FILES = process.env.STATIC_FILES || "./server/static";
 const OUTPUT_FILES = process.env.OUTPUT_FILES || "./server/output";
-const DEV_ENV = process.env.DEV_ENV === "true"
-const REGISTER_CHECK = process.env.REGISTER_CHECK === "true";
+const DEV_ENV = process.env.DEV_ENV == "true"
+const REGISTER_CHECK = process.env.REGISTER_CHECK == "true";
 const SERVE_FROM_PUB_DIR = ["404.html", "favicon.ico", "app.bundle.js", "index.html", "assets"]
 const IMAGE_TAG = process.env.IMAGE_TAG || "dev"
 

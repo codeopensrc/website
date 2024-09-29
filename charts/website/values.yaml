@@ -4,7 +4,7 @@ app:
   image:
     repository: registry.codeopensrc.com/kc/website/app
   secretStringData:
-    MONGO_DB_NAME: "mongo"
+    MONGO_DB_NAME: "website"
     BLOG_KEY: "secret_value"
   configMapData:
     DEV_DATABASE_URL_ORIGIN: "mongodb://website-db:27017"

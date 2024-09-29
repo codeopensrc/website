@@ -3,7 +3,7 @@
 const os = require("os");
 const consul = require("./consul.js");
 
-const REGISTER_CHECK = process.env.REGISTER_CHECK === "true"
+const REGISTER_CHECK = process.env.REGISTER_CHECK == "true"
 const LOG_EVERY_NUM_CHECKS = process.env.LOG_EVERY_NUM_CHECKS || 30;
 let serverCheckCount = 0;
 
