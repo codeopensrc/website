@@ -229,6 +229,7 @@ default:
 ##  and helm or argo for build/deploying the beta/prod version of the singular app
 .skaffold_deploy: &skaffold_deploy
   - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" ${APP_CHART_DIR}/Chart.yaml'
+  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|tag: .*|tag: \"${HELM_IMAGE_TAG}\"|" ${APP_CHART_DIR}/values.yaml'
   - skaffold config set --global collect-metrics false
   - *add_helm_repos
   - skaffold deploy -p ci --build-artifacts=tags.json ${SKAFFOLD_CLI_OPTS}
@@ -237,6 +238,7 @@ default:
 
 .deploy_helm_chart: &deploy_helm_chart
   - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|appVersion: .*|appVersion: \"${HELM_IMAGE_TAG}\"|" ${APP_CHART_DIR}/Chart.yaml'
+  - '[[ -n $HELM_IMAGE_TAG ]] && sed -i "s|tag: .*|tag: \"${HELM_IMAGE_TAG}\"|" ${APP_CHART_DIR}/values.yaml'
   - *add_helm_repos
   - helm dependency build ${APP_CHART_DIR}
   - helm upgrade $APPNAME ${APP_CHART_DIR} --install -f skaffold/ci-values.yaml -f helm_ci_values.yaml -n $KUBE_NAMESPACE --wait
@@ -549,6 +551,7 @@ commit_stable:
   - sed -i "s|${CURVER}-*.*|${CURVER}-${COMMIT_SHA}|" docker-compose.yml
   - 'sed -i "s|^version: ${CURCHART}|version: ${CHART_VERSION}|" ${APP_CHART_DIR}/Chart.yaml'
   - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${CURVER}-${COMMIT_SHA}\"|" ${APP_CHART_DIR}/Chart.yaml'
+  - 'sed -i "s|tag: \"${CURVER}-*.*\"|tag: \"${CURVER}-${COMMIT_SHA}\"|" ${APP_CHART_DIR}/values.yaml'
   - helm dependency update ${APP_CHART_DIR}
   - git add docker-compose.yml ${APP_CHART_DIR}/Chart.yaml ${APP_CHART_DIR}/Chart.lock
   ## publish important after 'git add' as publish updates Chart.lock to use remote helm repo
@@ -610,6 +613,7 @@ commit_version:
   - sed -i "s|${CURVER}-*.*|${VERSION}|" docker-compose.yml
   - 'sed -i "s|^version: ${CURCHART}|version: ${CHART_VERSION}|" ${APP_CHART_DIR}/Chart.yaml'
   - 'sed -i "s|appVersion: \"${CURVER}-*.*\"|appVersion: \"${VERSION}\"|" ${APP_CHART_DIR}/Chart.yaml'
+  - 'sed -i "s|tag: \"${CURVER}-*.*\"|tag: \"${VERSION}\"|" ${APP_CHART_DIR}/values.yaml'
   - helm dependency update ${APP_CHART_DIR}
   - git add docker-compose.yml ${APP_CHART_DIR}/Chart.yaml ${APP_CHART_DIR}/Chart.lock
   ## publish important after 'git add' as publish updates Chart.lock to use remote helm repo
@@ -667,7 +671,6 @@ deploy_production:
   script:
   - echo "$KUBE_NAMESPACE"
   - APPNAME=${SERVICE_NAME}
-  ## Need HELM_IMAGE_TAG for 'image.tag' otherwise it falls back to 'tpl' chart's appVersion
   - HELM_IMAGE_TAG=$(grep ^appVersion ./${APP_CHART_DIR}/Chart.yaml | awk '{print $2}' | tr -d '"')
   - 'INGRESS_HOST=${SUBDOMAIN}.${SERVER_DOMAIN}'
   - 'URL=https://${INGRESS_HOST}'

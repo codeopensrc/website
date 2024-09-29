@@ -23,7 +23,7 @@ Fastest and easiest way to run is using docker and `docker compose`
 `docker compose pull main`  
 - And run:  
 `docker compose up main [-d]`  
-- Project will be available at `localhost:5000` (main default)  
+- Project will be available at `localhost:5100` (main default)  
 
 #### Running with `helm`
 
@@ -83,11 +83,11 @@ For using with a resolvable hostname see [ingress](#ingress)
 `docker compose build dev`  
 1) Run it (`-d` for detached):  
 `docker compose up dev [-d]`  
-1) Project will be available at `localhost:5005` (dev default)  
+1) Project will be available at `localhost:5105` (dev default)  
 1) Run webpack inside the container. (Another terminal if not using `-d`):  
 `docker exec CONTAINER_NAME npm run watch`  
 1) Modify files in `src/*` and `server/*`  
-1) See changes at `localhost:5005`  
+1) See changes (after page refresh) at `localhost:5105`  
 
 
 ### Hot Reloading
@@ -100,10 +100,10 @@ to
 `docker exec -it CONTAINER_NAME npm run reloader`  
 The `-it` allows Ctrl+c to stop the `webpack-dev-server` started inside of the container.  
 
-- Instead of loading `localhost:5005`, load `localhost:5055`  
+- Instead of loading `localhost:5105`, load `localhost:5155`  
 See ports in `docker-compose.yml` and `src/config/webpack.config.js` to adjust.  
 
-Now with `:5055` loaded in the browser, when you update a react component you can see the page re-render it. The component should keep its state and will not re-run `componentDidMount`/`useEffect` functions.  
+Now with `:5155` loaded in the browser, when you update a react component you can see the page re-render it. The component should keep its state and will not re-run `componentDidMount`/`useEffect` functions.  
 
 
 ### Database

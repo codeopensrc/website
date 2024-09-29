@@ -1,15 +1,18 @@
+.enable_db: &enable_db false
+
 app:
   enabled: true
   replicaCount: 1
   image:
     repository: registry.codeopensrc.com/kc/website/app
+    tag: 0.10.0-df955f2
   secretStringData:
     MONGO_DB_NAME: "website"
     BLOG_KEY: "secret_value"
   configMapData:
     DEV_DATABASE_URL_ORIGIN: "mongodb://website-db:27017"
-    ENABLE_DB:           "false"
+    ENABLE_DB:            *enable_db
     AUTH_URL:             ""
     GITLAB_API_URL:       ""
 db:
-  enabled: false
+  enabled: *enable_db
