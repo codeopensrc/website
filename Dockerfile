@@ -1,7 +1,7 @@
-ARG NODE_VER=20.15.1-r0
+ARG NODE_VER=22.16.0-r2
 ARG BUILD_BASE=base
 ARG BASE_IMAGE=alpine
-ARG BASE_IMAGE_TAG=3.20
+ARG BASE_IMAGE_TAG=3.22
 ARG CI_BASE_REGISTRY=registry.codeopensrc.com
 ARG CI_BASE_IMAGE_REPO=os/react-template/node
 ARG CI_BASE_IMAGE_TAG=${NODE_VER}
@@ -21,7 +21,7 @@ FROM ${CI_BASE_REGISTRY}/${CI_BASE_IMAGE_REPO}:${CI_BASE_IMAGE_TAG} AS ci
 FROM ${BUILD_BASE} AS src
 HEALTHCHECK --interval=5s --timeout=2s --start-period=5s \
     CMD exit $(curl -sS http://localhost/healthcheck; echo $?)
-ARG NPM_VER=10.8.0-r0
+ARG NPM_VER=11.3.0-r1
 ARG PM2_VER=5.1.1
 RUN apk add --no-cache npm=${NPM_VER} && rm -rf /var/cache/apk/* \
     && npm install -g pm2@${PM2_VER} --omit=dev --omit=optional --no-package-lock
