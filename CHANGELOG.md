@@ -1,4 +1,15 @@
 
+# 0.11.0 - (*2025-09-10*)
+
+#### **Added (1)**
+- [ [0716bb7](https://gitlab.codeopensrc.com/kc/website/-/commit/0716bb7) ] **`added`** - Add image.tag to chart/values.yaml  
+
+#### **Changed (2)**
+- [ [b0c8923](https://gitlab.codeopensrc.com/kc/website/-/commit/b0c8923) ] **`changed`** - Update alpine, node, npm, and homepage  
+- [ [df955f2](https://gitlab.codeopensrc.com/kc/website/-/commit/df955f2) ] **`changed`** - Update defaults across various files  
+
+<br><br><br>
+
 # 0.10.0 - (*2024-09-27*)
 
 #### **Changed (1)**
